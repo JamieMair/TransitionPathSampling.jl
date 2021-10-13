@@ -1,50 +1,44 @@
 module TPS
 
-function do_nothing() nothing end
+# Interface for TPSProblem
+abstract type TPSProblem end
+"""
+    get_initial_state(problem)
 
-function get_init_fn(cache, config) end
-function get_stopping_fn(cache, config) end
-function get_step_fn(cache, config) end
-function get_pre_init_hook(cache, config) do_nothing end
-function get_post_init_hook(cache, config) do_nothing end
-function get_pre_step_hook(cache, config) do_nothing end
-function get_post_step_hook(cache, config) do_nothing end
-function get_final_hook(cache, config) do_nothing end
+Retrieves an initial state for the problem specified.
 
-function run!(cache, config)
-    # Extract all the functions you need based on the configuration and cache
-    init_fn! = get_init_fn(cache, config)
-    stop_fn! = get_stopping_fn(cache, config)
-    step_fn! = get_step_fn(cache, config)
+# Examples
+```julia-repl
+julia> initial_state = get_initial_state(problem)
+```
+"""
+function get_initial_state(problem::TPSProblem) end
 
-    # Load the hook functions
-    pre_init_hook! = get_pre_init_hook(cache, config)
-    post_init_hook! = get_post_init_hook(cache, config)
+# Interface for TPSAlgorithm
+abstract type TPSAlgorithm end
 
-    pre_step_hook! = get_pre_step_hook(cache, config)
-    post_step_hook! = get_post_step_hook(cache, config)
+function init_solution(alg::TPSAlgorithm, problem::TPSProblem) end
+function iterator(alg::TPSAlgorithm) end
+function step!(solution, iter, alg::TPSAlgorithm) end
 
-    final_hook! = get_final_hook(cache, config)
+# Interface for TPSSolution
+abstract type TPSSolution end
 
-    # Compile the inner loop, hopefully removing unneeded hooks
-    function inner_loop!()
-        pre_step_hook!()
-        step_fn!()
-        post_step_hook!()
+function finalise_solution!(solution::TPSSolution) nothing end
+
+function solve(problem::TPSProblem, alg::TPSAlgorithm)
+    solution = init_solution(alg, problem)
+
+    for iter in iterator(alg)
+        step!(solution, iter, alg)
     end
 
-    pre_init_hook!()
-    init_fn!()
-    post_init_hook!()
+    finalise_solution!(solution)
     
-    while !stop_fn!()
-        inner_loop!()
-    end
-
-    final_hook!()
-
-    nothing
+    return solution
 end
 
+
+export solve, TPSProblem, TPSAlgorithm, TPSSolution
 
 end
