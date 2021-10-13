@@ -1,5 +1,7 @@
 module TPS
 
+# Interface for Observable
+abstract type AbstractObservable end
 # Interface for TPSProblem
 abstract type TPSProblem end
 """
@@ -13,6 +15,8 @@ julia> initial_state = get_initial_state(problem)
 ```
 """
 function get_initial_state(problem::TPSProblem) end
+function get_observable(problem::TPSProblem)::AbstractObservable end
+
 
 # Interface for TPSAlgorithm
 abstract type TPSAlgorithm end
@@ -25,9 +29,10 @@ function step!(solution, iter, alg::TPSAlgorithm) end
 abstract type TPSSolution end
 
 function finalise_solution!(solution::TPSSolution) nothing end
+function construct_solution(alg::TPSAlgorithm, problem::TPSProblem) error("Not implemented.") end
 
-function solve(problem::TPSProblem, alg::TPSAlgorithm)
-    solution = init_solution(alg, problem)
+function solve(problem::TPSProblem, alg::TPSAlgorithm, args...; kwargs...)
+    solution = init_solution(alg, problem, args...; kwargs...)
 
     for iter in iterator(alg)
         step!(solution, iter, alg)
@@ -37,6 +42,9 @@ function solve(problem::TPSProblem, alg::TPSAlgorithm)
     
     return solution
 end
+
+## Includes ##
+include("sa_problem.jl")
 
 
 export solve, TPSProblem, TPSAlgorithm, TPSSolution
