@@ -1,7 +1,7 @@
 name = "TPS"
 uuid = "90a4db8d-a042-44ed-af16-fb847fa05318"
-authors = ["Jamie Mair <jamie.mair@hotmail.co.uk> and contributors"]
-version = "0.1.0"
+authors = ["Jamie Mair and contributors"]
+version = "0.1.1"
 
 [deps]
 Lazy = "50d2b5c4-7a5e-59d5-8109-a42b560f39c0"
