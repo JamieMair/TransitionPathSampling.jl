@@ -37,9 +37,16 @@ function SimpleSolution(problem::TPSProblem, algorithm::TPSAlgorithm)
 end
 # Forward these methods so that the solution can be plotted
 @forward SimpleSolution.observations (size, getindex, setindex!, IndexStyle, iterate, similar, push!, pop!)
-abstract type AbstractMetropolisHastingsAlg <: TPSAlgorithm end
+function get_current_state(solution::SimpleSolution)
+    return solution.state
+end
+get_problem(solution::SimpleSolution) = solution.problem
+function set_current_state!(solution::SimpleSolution{T, S}, state::S)
+    solution.state = state
+    return nothing
+end
 
-function init_solution(alg::AbstractMetropolisHastingsAlg, problem::TPSProblem, args...; kwargs...)
+function init_solution(alg::TPSAlgorithm, problem::TPSProblem, args...; kwargs...)
     # By default, have a simple solution
     # TODO: Add some configuration options here
     sol = SimpleSolution(problem, alg)
