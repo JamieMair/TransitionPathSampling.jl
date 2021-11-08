@@ -70,7 +70,7 @@ function MetropolisHastingsAlgorithm(s, σ; rng=Random.GLOBAL_RNG)
 end
 
 
-function step!(solution::TPSSolution, iter, alg::MetropolisHastingsAlgorithm, args...; kwargs...)
+function step!(solution::TPSSolution, alg::MetropolisHastingsAlgorithm, args...; kwargs...)
     state = get_current_state(solution)
     delta = alg.perturb_gen_fn(state)
     alg.acceptance_fn(solution, delta)
