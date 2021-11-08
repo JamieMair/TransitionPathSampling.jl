@@ -24,7 +24,7 @@ end
 
 function get_guassian_perturbation_fn(σ; rng=Random.GLOBAL_RNG)
     return state -> begin
-        delta = similar(state)
+        delta = Base.similar(state)
         randn!(rng, delta)
         delta .*= σ
         return delta
