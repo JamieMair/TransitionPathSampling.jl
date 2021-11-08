@@ -2,7 +2,7 @@ abstract type AbstractSAProblem <: TPSProblem end
 import Lazy: @forward
 using Base
 
-struct SAProblem{T, S<:AbstractObservable} <: TPSProblem
+struct SAProblem{T, S<:AbstractObservable} <: AbstractSAProblem
     observable::S
     state::T
 end
@@ -46,7 +46,7 @@ function set_current_state!(solution::SimpleSolution{T, S}, state::S) where {T, 
     return nothing
 end
 
-function init_solution(alg::TPSAlgorithm, problem::TPSProblem, args...; kwargs...)
+function init_solution(alg::TPSAlgorithm, problem::AbstractSAProblem, args...; kwargs...)
     # By default, have a simple solution
     # TODO: Add some configuration options here
     sol = SimpleSolution(problem, alg)
