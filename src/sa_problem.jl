@@ -25,7 +25,7 @@ end
 
 abstract type AbstractSolution <: TPSSolution end
 
-mutable struct SimpleSolution{T, S}
+mutable struct SimpleSolution{T, S} <: TPSSolution
     observations::Vector{T}
     problem::TPSProblem
     algorithm::TPSAlgorithm
