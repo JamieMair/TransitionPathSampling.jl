@@ -41,7 +41,7 @@ function get_current_state(solution::SimpleSolution)
     return solution.state
 end
 get_problem(solution::SimpleSolution) = solution.problem
-function set_current_state!(solution::SimpleSolution{T, S}, state::S)
+function set_current_state!(solution::SimpleSolution{T, S}, state::S) where {T, S}
     solution.state = state
     return nothing
 end
