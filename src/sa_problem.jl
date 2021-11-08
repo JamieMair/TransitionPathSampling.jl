@@ -32,6 +32,7 @@ mutable struct SimpleSolution{T, S} <: TPSSolution
     state::S
 end
 function SimpleSolution(problem::TPSProblem, algorithm::TPSAlgorithm)
+    observable = get_observable(problem)
     initial_observable = observe(observable, initial_state)
     return SimpleSolution([initial_observable], problem, algorithm, deepcopy(get_initial_state(problem)))
 end
