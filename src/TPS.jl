@@ -35,7 +35,7 @@ function solve(problem::TPSProblem, alg::TPSAlgorithm, args...; kwargs...)
     solution = init_solution(alg, problem, args...; kwargs...)
 
     for iter in iterator(alg)
-        step!(solution, iter, alg)
+        step!(solution, alg, iter, args...; kwargs...)
     end
 
     finalise_solution!(solution)
@@ -46,7 +46,9 @@ end
 ## Includes ##
 include("sa_problem.jl")
 
+include("mh_alg.jl")
+
 
 export solve, TPSProblem, TPSAlgorithm, TPSSolution
-
+    
 end
