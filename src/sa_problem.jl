@@ -53,4 +53,4 @@ function init_solution(alg::TPSAlgorithm, problem::TPSProblem, args...; kwargs..
     return sol
 end
 
-export SAProblem, SimpleObservable, observe, SimpleSolution, init_solution
+export SAProblem, SimpleObservable, observe, SimpleSolution, init_solution, get_current_state, set_current_state!

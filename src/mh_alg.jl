@@ -75,3 +75,5 @@ function step!(solution::TPSSolution, iter, alg::MetropolisHastingsAlgorithm, ar
     delta = alg.perturb_gen_fn(state)
     alg.acceptance_fn(solution, delta)
 end
+
+export step!, MetropolisHastingsAlgorithm
