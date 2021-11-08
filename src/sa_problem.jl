@@ -2,7 +2,7 @@ abstract type AbstractSAProblem <: TPSProblem end
 import Lazy: @forward
 using Base
 
-struct SAProblem{T, S<:AbstractObservable}
+struct SAProblem{T, S<:AbstractObservable} <: TPSProblem
     observable::S
     state::T
 end
