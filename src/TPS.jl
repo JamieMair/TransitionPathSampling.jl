@@ -1,7 +1,7 @@
 module TPS
 
-# Interface for Observable
-abstract type AbstractObservable end
+
+
 # Interface for TPSProblem
 abstract type TPSProblem end
 """
@@ -43,12 +43,16 @@ function solve(problem::TPSProblem, alg::TPSAlgorithm, args...; kwargs...)
     return solution
 end
 
+export solve, TPSProblem, TPSAlgorithm, TPSSolution
 ## Includes ##
-include("sa_problem.jl")
 
+include("default_solutions.jl")
+include("observables.jl")
+
+
+include("sa_problem.jl")
 include("mh_alg.jl")
 
 
-export solve, TPSProblem, TPSAlgorithm, TPSSolution
     
 end
