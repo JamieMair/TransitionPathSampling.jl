@@ -26,4 +26,6 @@ function set_current_state!(solution::SimpleSolution{T, S}, state::S) where {T, 
     solution.state = state
     return nothing
 end
+
+export SimpleSolution, get_current_state, set_current_state!, AbstractSolution
 end
