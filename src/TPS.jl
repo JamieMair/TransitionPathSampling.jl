@@ -15,12 +15,10 @@ julia> initial_state = get_initial_state(problem)
 ```
 """
 function get_initial_state(problem::TPSProblem) end
-function get_observable(problem::TPSProblem)::AbstractObservable end
-
+function get_observable(problem::TPSProblem) end
 
 # Interface for TPSAlgorithm
 abstract type TPSAlgorithm end
-
 function init_solution(alg::TPSAlgorithm, problem::TPSProblem) end
 function iterator(alg::TPSAlgorithm) end
 function step!(solution, iter, alg::TPSAlgorithm) end
@@ -45,14 +43,11 @@ end
 
 export solve, TPSProblem, TPSAlgorithm, TPSSolution
 ## Includes ##
-
 include("default_solutions.jl")
 include("observables.jl")
 
 
 include("sa_problem.jl")
 include("mh_alg.jl")
-
-
     
 end

@@ -1,4 +1,3 @@
-module Observables
 # Interface for Observable
 abstract type AbstractObservable end
 
@@ -11,5 +10,4 @@ function observe(observable::SimpleObservable, state::T) where {T}
     return observable.observe(state)
 end
 
-export observe, AbstractObservable, SimpleObservable
-end
+export observe, AbstractObservable

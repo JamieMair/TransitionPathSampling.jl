@@ -1,6 +1,4 @@
 module SimulatedAnnealing
-using ..Observables
-using ..Solutions
 using ..TPS
 
 
@@ -22,5 +20,5 @@ function init_solution(alg::TPSAlgorithm, problem::AbstractSAProblem, args...; k
     return sol
 end
 
-export SAProblem, SimpleObservable, observe, SimpleSolution, init_solution, get_current_state, set_current_state!
+export SAProblem, init_solution, get_observable, get_initial_state
 end

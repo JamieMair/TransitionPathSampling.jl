@@ -1,4 +1,3 @@
-module Solutions
 import Lazy: @forward
 using Base
 using ..TPS
@@ -27,5 +26,4 @@ function set_current_state!(solution::SimpleSolution{T, S}, state::S) where {T, 
     return nothing
 end
 
-export SimpleSolution, get_current_state, set_current_state!, AbstractSolution
-end
+export AbstractSolution, get_current_state, set_current_state!, SimpleSolution
