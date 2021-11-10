@@ -43,8 +43,8 @@ end
 
 export solve, TPSProblem, TPSAlgorithm, TPSSolution
 ## Includes ##
-include("default_solutions.jl")
 include("observables.jl")
+include("default_solutions.jl")
 
 
 include("sa_problem.jl")
