@@ -6,7 +6,7 @@ struct SimpleObservable{T<:Function} <: AbstractObservable
 end
 
 function observe(observable::AbstractObservable, state) error("Not implemented") end
-function observe(observable::SimpleObservable, state::T) where {T}
+function observe(observable::SimpleObservable, state)
     return observable.observe(state)
 end
 

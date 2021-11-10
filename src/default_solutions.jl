@@ -9,14 +9,14 @@ mutable struct SimpleSolution{T, S} <: TPSSolution
     algorithm::TPSAlgorithm
     state::S
 end
-function SimpleSolution(problem::TPSProblem, algorithm::TPSAlgorithm)
+function SimpleSolution(problem::T, algorithm::S) where {T<:TPSProblem, S<:TPSAlgorithm}
     observable = get_observable(problem)
     state = get_initial_state(problem)
     initial_observable = observe(observable, state)
     return SimpleSolution([initial_observable], problem, algorithm, deepcopy(state))
 end
 # Forward these methods so that the solution can be plotted
-@forward SimpleSolution.observations (Base.size, Base.getindex, Base.setindex!, Base.IndexStyle, Base.iterate, Base.similar, Base.push!, Base.pop!, Base.first, Base.firstindex, Base.last, Base.lastindex)
+@forward SimpleSolution.observations (Base.size, Base.getindex, Base.setindex!, Base.IndexStyle, Base.iterate, Base.similar, Base.push!, Base.pop!, Base.first, Base.firstindex, Base.last, Base.lastindex, Base.length)
 function get_current_state(solution::SimpleSolution)
     return solution.state
 end
