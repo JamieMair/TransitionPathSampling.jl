@@ -19,14 +19,13 @@ function get_observable(problem::TPSProblem) end
 
 # Interface for TPSAlgorithm
 abstract type TPSAlgorithm end
-function init_solution(alg::TPSAlgorithm, problem::TPSProblem) end
+function init_solution(alg, problem, args...; kwargs...) error("Default solution is not specified.") end
 function step!(solution, iter, alg::TPSAlgorithm) end
 
 # Interface for TPSSolution
 abstract type TPSSolution end
 
 function finalise_solution!(solution::TPSSolution) nothing end
-function construct_solution(alg::TPSAlgorithm, problem::TPSProblem) error("Not implemented.") end
 
 include("iterators.jl")
 
