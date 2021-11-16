@@ -47,7 +47,7 @@ function get_observable_acceptance_fn(s, apply_fn, undo_fn; rng=Random.GLOBAL_RN
         obs = TPS.get_observable(TPS.get_problem(solution))
         previous_observation = last(solution)
         apply_fn(solution, perturbation)
-        new_observation = TPS.observe(obs, get_current_state(solution))
+        new_observation = TPS.observe(obs, TPS.get_current_state(solution))
         if rand(rng) <= exp(-s*(new_observation-previous_observation))
             push!(solution, new_observation)
             return true
@@ -69,7 +69,7 @@ end
 
 
 function TPS.step!(solution::T, alg::MetropolisHastingsAlgorithm, args...; kwargs...) where {T<:TPSSolution}
-    state = get_current_state(solution)
+    state = TPS.get_current_state(solution)
     delta = alg.perturb_gen_fn(state)
     alg.acceptance_fn!(solution, delta)
     nothing
