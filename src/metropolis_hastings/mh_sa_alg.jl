@@ -59,7 +59,7 @@ function get_observable_acceptance_fn(s, apply_fn, undo_fn; rng=Random.GLOBAL_RN
     end
 end
 
-function MetropolisHastingsAlgorithm(s, σ; rng=Random.GLOBAL_RNG)
+function get_guassian_mh_alg(s, σ; rng=Random.GLOBAL_RNG)
     perturb_fn = get_guassian_perturbation_fn(σ; rng=rng)
     apply_fn = get_apply_perturbation_fn()
     undo_fn = get_undo_perturbation_fn()
