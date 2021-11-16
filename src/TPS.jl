@@ -46,8 +46,9 @@ export solve, TPSProblem, TPSAlgorithm, TPSSolution
 include("observables.jl")
 include("default_solutions.jl")
 
-
+# Problems
 include("sa_problem.jl")
-include("mh_alg.jl")
+# Algorithms
+include("metropolis_hastings/mh.jl")
     
 end

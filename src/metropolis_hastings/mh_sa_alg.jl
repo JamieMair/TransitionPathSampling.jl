@@ -1,7 +1,5 @@
 using Random
 
-abstract type AbstractMetropolisHastingsAlg <: TPSAlgorithm end
-
 struct MetropolisHastingsAlgorithm <: AbstractMetropolisHastingsAlg
     perturb_gen_fn
     apply_perturbation_fn!
@@ -70,11 +68,9 @@ function MetropolisHastingsAlgorithm(s, σ; rng=Random.GLOBAL_RNG)
 end
 
 
-function step!(solution::T, alg::MetropolisHastingsAlgorithm, args...; kwargs...) where {T<:TPSSolution}
+function TPS.step!(solution::T, alg::MetropolisHastingsAlgorithm, args...; kwargs...) where {T<:TPSSolution}
     state = get_current_state(solution)
     delta = alg.perturb_gen_fn(state)
     alg.acceptance_fn!(solution, delta)
     nothing
 end
-
-export step!, MetropolisHastingsAlgorithm
