@@ -17,5 +17,7 @@ function TPS.init_solution(alg, problem::T, args...; kwargs...) where {T<:Abstra
     return sol
 end
 
+export DTProblem, get_trajectory_length, AbstractDiscreteTrajectoryProblem
+
 
 end
