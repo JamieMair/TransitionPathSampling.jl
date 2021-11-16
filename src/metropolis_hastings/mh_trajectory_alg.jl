@@ -65,7 +65,7 @@ function get_shooting_observable_acceptance_fn(s, apply_fn, undo_fn; rng=Random.
         previous_observation = last(solution)
         apply_fn(solution, perturbation)
         # TODO: Implement an observable which can calculate changes efficiently
-        new_observation = TPS.observe(obs, get_current_state(solution))
+        new_observation = TPS.observe(obs, TPS.get_current_state(solution))
         if rand(rng) <= exp(-s*(new_observation-previous_observation))
             push!(solution, new_observation)
             return true
