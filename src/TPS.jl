@@ -48,6 +48,7 @@ include("default_solutions.jl")
 
 # Problems
 include("sa_problem.jl")
+include("discrete_trajectory_problem.jl")
 # Algorithms
 include("metropolis_hastings/mh.jl")
     
