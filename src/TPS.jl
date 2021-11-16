@@ -24,7 +24,7 @@ function step!(solution, alg::TPSAlgorithm, iter) end
 
 # Interface for TPSSolution
 abstract type TPSSolution end
-
+get_problem(solution::TPSSolution) = error("Unimplemented.")
 function finalise_solution!(solution::TPSSolution) nothing end
 
 include("iterators.jl")

@@ -1,6 +1,5 @@
 import Lazy: @forward
 using Base
-using ..TPS
 
 abstract type AbstractSolution <: TPSSolution end
 mutable struct SimpleSolution{T, S} <: TPSSolution
@@ -26,4 +25,4 @@ function set_current_state!(solution::SimpleSolution{T, S}, state::S) where {T, 
     return nothing
 end
 
-export AbstractSolution, get_current_state, set_current_state!, SimpleSolution
+export AbstractSolution, get_current_state, set_current_state!, SimpleSolution, get_problem
