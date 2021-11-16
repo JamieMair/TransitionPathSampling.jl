@@ -20,7 +20,7 @@ function get_observable(problem::TPSProblem) end
 # Interface for TPSAlgorithm
 abstract type TPSAlgorithm end
 function init_solution(alg, problem, args...; kwargs...) error("Default solution is not specified.") end
-function step!(solution, iter, alg::TPSAlgorithm) end
+function step!(solution, alg::TPSAlgorithm, iter) end
 
 # Interface for TPSSolution
 abstract type TPSSolution end
