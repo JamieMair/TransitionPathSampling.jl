@@ -7,9 +7,9 @@ function shoot_perturbation(states, static_index, σ, forwards::Bool; rng=Random
     perturbations = [similar(states[i]) for i in 1:n]
     current_state = deepcopy(states[static_index])
     for i=2:n
-        randn!(rng, perturbation[i])
-        current_state .+= perturbation[i].*σ
-        perturbation[i] .= current_state .- states[indices[i]]
+        randn!(rng, perturbations[i])
+        current_state .+= perturbations[i].*σ
+        perturbations[i] .= current_state .- states[indices[i]]
     end
 
     return perturbations, indices
