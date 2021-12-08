@@ -1,7 +1,5 @@
 using Random
 
-abstract type AbstractMetropolisHastingsAlg <: TPSAlgorithm end
-
 struct MetropolisHastingsAlgorithm <: AbstractMetropolisHastingsAlg
     perturb_gen_fn
     apply_perturbation_fn!
@@ -32,24 +30,24 @@ function get_guassian_perturbation_fn(σ; rng=Random.GLOBAL_RNG)
 end
 function get_apply_perturbation_fn()
     return (solution, perturbation) -> begin
-        state = get_current_state(solution)
+        state = TPS.get_current_state(solution)
         state .+= perturbation
-        set_current_state!(solution, state)
+        TPS.set_current_state!(solution, state)
     end
 end
 function get_undo_perturbation_fn()
     return (solution, perturbation) -> begin
-        state = get_current_state(solution)
+        state = TPS.get_current_state(solution)
         state .-= perturbation
-        set_current_state!(solution, state)
+        TPS.set_current_state!(solution, state)
     end
 end
 function get_observable_acceptance_fn(s, apply_fn, undo_fn; rng=Random.GLOBAL_RNG)
     return (solution, perturbation) -> begin
-        obs = get_observable(get_problem(solution))
+        obs = TPS.get_observable(TPS.get_problem(solution))
         previous_observation = last(solution)
         apply_fn(solution, perturbation)
-        new_observation = observe(obs, get_current_state(solution))
+        new_observation = TPS.observe(obs, TPS.get_current_state(solution))
         if rand(rng) <= exp(-s*(new_observation-previous_observation))
             push!(solution, new_observation)
             return true
@@ -61,7 +59,7 @@ function get_observable_acceptance_fn(s, apply_fn, undo_fn; rng=Random.GLOBAL_RN
     end
 end
 
-function MetropolisHastingsAlgorithm(s, σ; rng=Random.GLOBAL_RNG)
+function get_guassian_mh_alg(s, σ; rng=Random.GLOBAL_RNG)
     perturb_fn = get_guassian_perturbation_fn(σ; rng=rng)
     apply_fn = get_apply_perturbation_fn()
     undo_fn = get_undo_perturbation_fn()
@@ -70,11 +68,9 @@ function MetropolisHastingsAlgorithm(s, σ; rng=Random.GLOBAL_RNG)
 end
 
 
-function step!(solution::T, alg::MetropolisHastingsAlgorithm, args...; kwargs...) where {T<:TPSSolution}
-    state = get_current_state(solution)
+function TPS.step!(solution::T, alg::MetropolisHastingsAlgorithm, args...; kwargs...) where {T<:TPSSolution}
+    state = TPS.get_current_state(solution)
     delta = alg.perturb_gen_fn(state)
     alg.acceptance_fn!(solution, delta)
     nothing
 end
-
-export step!, MetropolisHastingsAlgorithm

@@ -20,11 +20,11 @@ function get_observable(problem::TPSProblem) end
 # Interface for TPSAlgorithm
 abstract type TPSAlgorithm end
 function init_solution(alg, problem, args...; kwargs...) error("Default solution is not specified.") end
-function step!(solution, iter, alg::TPSAlgorithm) end
+function step!(solution, alg::TPSAlgorithm, iter) end
 
 # Interface for TPSSolution
 abstract type TPSSolution end
-
+get_problem(solution::TPSSolution) = error("Unimplemented.")
 function finalise_solution!(solution::TPSSolution) nothing end
 
 include("iterators.jl")
@@ -46,8 +46,10 @@ export solve, TPSProblem, TPSAlgorithm, TPSSolution
 include("observables.jl")
 include("default_solutions.jl")
 
-
+# Problems
 include("sa_problem.jl")
-include("mh_alg.jl")
+include("discrete_trajectory_problem.jl")
+# Algorithms
+include("metropolis_hastings/mh.jl")
     
 end
