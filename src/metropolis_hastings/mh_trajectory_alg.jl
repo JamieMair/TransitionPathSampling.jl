@@ -36,7 +36,7 @@ function get_guassian_shooting_perturbation_fn(σ; rng=Random.GLOBAL_RNG, fracti
             forwards = false
         end
 
-        if (fraction_to_exclude==1.0)
+        if (fraction_to_exclude==0.0)
             parameters_to_exclude = Nothing
         else
             total_params = length(states[begin])
