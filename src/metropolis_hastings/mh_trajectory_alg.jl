@@ -1,6 +1,6 @@
 using Random
 
-function shoot_perturbation(states, static_index, σ, forwards::Bool; rng=Random.GLOBAL_RNG, parameter_exclude_mask::BitArray=Nothing)
+function shoot_perturbation(states, static_index, σ, forwards::Bool; rng=Random.GLOBAL_RNG, parameter_exclude_mask=Nothing)
     T = length(states)
     indices = forwards ? (static_index+1:T) : (static_index-1:-1:1)
     n = length(indices)
