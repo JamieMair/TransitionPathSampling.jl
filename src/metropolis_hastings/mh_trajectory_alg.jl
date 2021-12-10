@@ -42,7 +42,7 @@ function get_guassian_shooting_perturbation_fn(σ; rng=Random.GLOBAL_RNG, fracti
             total_params = length(states[begin])
             num_parameters = Int(floor(fraction_to_exclude*total_params))
             if (!isdefined(bit_array_memoized, 1) || bit_array_memoized[][2] != num_parameters || bit_array_memoized[][3] != total_params)
-                parameters_to_exclude = BitArray(i > num_parameters for i = 1:total_params)
+                parameters_to_exclude = BitArray(i <= num_parameters for i = 1:total_params)
                 bit_array_memoized[] = (parameters_to_exclude, num_parameters, total_params)
             end
 
