@@ -1,6 +1,5 @@
 module TPS
 
-
 # Interface for TPSProblem
 abstract type TPSProblem end
 """
