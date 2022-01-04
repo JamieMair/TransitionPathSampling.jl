@@ -20,10 +20,24 @@ function get_acceptance(algorithm::MetropolisHastingsAlgorithm, solution, pertur
     return algorithm.acceptance_fn(solution, perturbation)
 end
 
-function get_guassian_perturbation_fn(σ; rng=Random.GLOBAL_RNG)
+function get_guassian_perturbation_fn(σ; rng=Random.GLOBAL_RNG, fraction_to_exclude=0.0)
+    bit_array_memoized = Ref{Tuple{BitArray, Int, Int}}()
     return state -> begin
         delta = Base.similar(state)
         randn!(rng, delta)
+
+        total_params = length(state)
+        num_parameters = Int(floor(fraction_to_exclude*total_params))
+        if (num_parameters > 0)
+            if (!isdefined(bit_array_memoized, 1) || bit_array_memoized[][2] != num_parameters || bit_array_memoized[][3] != total_params)
+                parameters_to_exclude = BitArray(i <= num_parameters for i = 1:total_params)
+                bit_array_memoized[] = (parameters_to_exclude, num_parameters, total_params)
+            end
+            parameters_to_exclude = bit_array_memoized[][1]
+            Random.shuffle!(rng, parameters_to_exclude)
+            delta[parameters_to_exclude] .= zero(eltype(delta))
+        end
+        
         delta .*= σ
         return delta
     end
@@ -59,8 +73,10 @@ function get_observable_acceptance_fn(s, apply_fn, undo_fn; rng=Random.GLOBAL_RN
     end
 end
 
-function get_guassian_mh_alg(s, σ; rng=Random.GLOBAL_RNG)
-    perturb_fn = get_guassian_perturbation_fn(σ; rng=rng)
+function get_guassian_mh_alg(s, σ; rng=Random.GLOBAL_RNG, fraction_to_include=1.0)
+    @assert (fraction_to_include >= 0.0 && fraction_to_include <= 1.0) "The fraction of parameters to include should be between 0 and 1 inclusive."
+    fraction_to_exclude = 1.0-fraction_to_include
+    perturb_fn = get_guassian_perturbation_fn(σ; rng=rng, fraction_to_exclude=fraction_to_exclude)
     apply_fn = get_apply_perturbation_fn()
     undo_fn = get_undo_perturbation_fn()
     acpt_fn = get_observable_acceptance_fn(s, apply_fn, undo_fn; rng=rng)
