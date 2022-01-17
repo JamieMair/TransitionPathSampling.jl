@@ -1,7 +1,6 @@
 import Lazy: @forward
 using Base
 
-abstract type AbstractSolution <: TPSSolution end
 mutable struct SimpleSolution{T, S} <: TPSSolution
     observations::Vector{T}
     problem::TPSProblem
@@ -16,13 +15,12 @@ function SimpleSolution(problem::T, algorithm::S) where {T<:TPSProblem, S<:TPSAl
 end
 # Forward these methods so that the solution can be plotted
 @forward SimpleSolution.observations (Base.size, Base.getindex, Base.setindex!, Base.IndexStyle, Base.iterate, Base.similar, Base.push!, Base.pop!, Base.first, Base.firstindex, Base.last, Base.lastindex, Base.length)
-function get_current_state(solution::SimpleSolution)
-    return solution.state
-end
+get_current_state(solution::SimpleSolution) = solution.state
 get_problem(solution::SimpleSolution) = solution.problem
 function set_current_state!(solution::SimpleSolution{T, S}, state::S) where {T, S}
     solution.state = state
     return nothing
 end
+get_observable_type(solution::SimpleSolution{T, S}) where {T, S} = T
 
-export AbstractSolution, get_current_state, set_current_state!, SimpleSolution, get_problem
+export get_current_state, set_current_state!, SimpleSolution, get_problem, get_observable_type

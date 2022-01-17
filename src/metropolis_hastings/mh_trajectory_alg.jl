@@ -20,6 +20,7 @@ function shoot_perturbation(states, static_index, σ, forwards::Bool; rng=Random
 end
 
 function get_guassian_shooting_perturbation_fn(σ; rng=Random.GLOBAL_RNG, fraction_to_exclude=0.0)
+    # This function is NOT thread-safe! - might be worth removing the cache here.
     bit_array_memoized = Ref{Tuple{BitArray, Int, Int}}()
     return states -> begin
         T = length(states)
@@ -85,7 +86,8 @@ function get_shooting_observable_acceptance_fn(s, apply_fn, undo_fn; rng=Random.
         apply_fn(solution, perturbation)
         # TODO: Implement an observable which can calculate changes efficiently
         new_observation = TPS.observe(obs, TPS.get_current_state(solution))
-        if rand(rng) <= exp(-s*(new_observation-previous_observation))
+        # TODO: Abstract this method to calculate a chance of acceptance - the responsibilities should be separated
+        if rand(rng) <= exp(-s*(new_observation-previous_observation)) 
             push!(solution, new_observation)
             return true
         else

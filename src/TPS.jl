@@ -24,13 +24,22 @@ function step!(solution, alg::TPSAlgorithm, iter) end
 # Interface for TPSSolution
 abstract type TPSSolution end
 get_problem(solution::TPSSolution) = error("Unimplemented.")
+get_current_state(solution::TPSSolution) = error("Unimplemented.")
+set_current_state!(solution::TPSSolution) = error("Unimplemented.")
+get_observable_type(solution::TPSSolution) = error("Unimplemented.")
 function finalise_solution!(solution::TPSSolution) nothing end
 
-include("iterators.jl")
+function get_iterator(iter, args...; kwargs...)
+    if typeof(iter)==Int
+        return 1:iter
+    else
+        return iter
+    end
+end
 
 function solve(problem::TPSProblem, alg::TPSAlgorithm, iterator, args...; kwargs...)
     solution = init_solution(alg, problem, args...; kwargs...)
-    iter = get_iterator(iterator; problem = problem, solution=solution, algorithm=alg)
+    iter = get_iterator(iterator; problem=problem, solution=solution, algorithm=alg)
     for iter_state in iter
         step!(solution, alg, iter_state, args...; kwargs...)
     end
@@ -40,7 +49,6 @@ function solve(problem::TPSProblem, alg::TPSAlgorithm, iterator, args...; kwargs
     return solution
 end
 
-export solve, TPSProblem, TPSAlgorithm, TPSSolution
 ## Includes ##
 include("observables.jl")
 include("default_solutions.jl")
@@ -50,5 +58,10 @@ include("sa_problem.jl")
 include("discrete_trajectory_problem.jl")
 # Algorithms
 include("metropolis_hastings/mh.jl")
-    
+
+# Convergence
+include("convergence/convergence.jl")
+
+
+export solve, TPSProblem, TPSAlgorithm, TPSSolution
 end
