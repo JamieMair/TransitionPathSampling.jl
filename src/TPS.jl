@@ -49,6 +49,8 @@ function solve(problem::TPSProblem, alg::TPSAlgorithm, iterator, args...; kwargs
     return solution
 end
 
+export solve, TPSProblem, TPSAlgorithm, TPSSolution
+
 ## Includes ##
 include("observables.jl")
 include("default_solutions.jl")
@@ -63,5 +65,4 @@ include("metropolis_hastings/mh.jl")
 include("convergence/convergence.jl")
 
 
-export solve, TPSProblem, TPSAlgorithm, TPSSolution
 end
