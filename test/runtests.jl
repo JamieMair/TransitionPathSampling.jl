@@ -2,5 +2,5 @@ using TPS
 using Test
 
 @testset "TPS.jl" begin
-    # Write your tests here.
+    include("convergence/test_convergence.jl")
 end
