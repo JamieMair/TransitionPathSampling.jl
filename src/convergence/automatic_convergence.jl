@@ -68,18 +68,24 @@ mutable struct AutomaticConvergenceIterator
     options::AutomaticConvergenceOptions
 end
 
-function Base.iterate(iter::AutomaticConvergenceIterator)
-    push!(iter.solution.buffer, last(iter.solution.solution))
-    return (1, (1, Statistics.mean(iter.solution.buffer)))
+struct AutomaticConvergenceIteratorState{T}
+    epoch::Integer
+    mean_observable::T
 end
 
-function Base.iterate(iter::AutomaticConvergenceIterator, state)
+function Base.iterate(iter::AutomaticConvergenceIterator)
+    push!(iter.solution.buffer, last(iter.solution.solution))
+    return (1, AutomaticConvergenceIteratorState(1, Statistics.mean(iter.solution.buffer)))
+end
+
+function Base.iterate(iter::AutomaticConvergenceIterator, state::AutomaticConvergenceIteratorState)
     # Update the buffer
-    i, current_observable = state
+    i = state.epoch
+    current_observable = state.mean_observable
     push!(iter.solution.buffer, last(iter.solution.solution))
     # For warm ups, just iterate to the next state
     if i <= get_warmup_buffer_size(iter.options)
-        return (i+1, (i + 1, current_observable))
+        return AutomaticConvergenceIteratorState(i+1, (i + 1, current_observable))
     elseif i > get_max_iterations(iter.options)
         return nothing
     end
@@ -100,7 +106,7 @@ function Base.iterate(iter::AutomaticConvergenceIterator, state)
         end
     end
 
-    return (i+1, (i + 1, current_observable))
+    return AutomaticConvergenceIteratorState(i+1, (i + 1, current_observable))
 end
 
 function TPS.get_iterator(options::AutomaticConvergenceOptions, args...; solution, kwargs...)
@@ -110,5 +116,7 @@ function TPS.get_iterator(options::AutomaticConvergenceOptions, args...; solutio
     iterator = AutomaticConvergenceIterator(sol_wrapper, options)
     return iterator
 end
+
+TPS.get_epoch_from_state(state::AutomaticConvergenceIteratorState) = state.epoch
 
 export AutomaticConvergenceOptions

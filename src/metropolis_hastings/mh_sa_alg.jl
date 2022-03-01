@@ -5,29 +5,39 @@ struct MetropolisHastingsAlgorithm <: AbstractMetropolisHastingsAlg
     apply_perturbation_fn!
     undo_perturbation_fn!
     acceptance_fn!
+    parameters
+end
+
+mutable struct GaussianMHParameters
+    s
+    σ
+    fraction_to_exclude
 end
 
 function get_perturbation(algorithm::MetropolisHastingsAlgorithm, solution)
     return algorithm.perturb_gen_fn(solution)
 end
-function apply_perturbation(algorithm::MetropolisHastingsAlgorithm, solution, perturbation)
-    return algorithm.apply_perturbation_fn(solution, perturbation)
+function apply_perturbation!(algorithm::MetropolisHastingsAlgorithm, solution, perturbation)
+    algorithm.apply_perturbation_fn!(solution, perturbation)
+    nothing
 end
-function undo_perturbation(algorithm::MetropolisHastingsAlgorithm, solution, perturbation)
-    return algorithm.undo_perturbation_fn(solution, perturbation)
+function undo_perturbation!(algorithm::MetropolisHastingsAlgorithm, solution, perturbation)
+    algorithm.undo_perturbation_fn!(solution, perturbation)
+    nothing
 end
-function get_acceptance(algorithm::MetropolisHastingsAlgorithm, solution, perturbation)
-    return algorithm.acceptance_fn(solution, perturbation)
+function apply_acceptance!(algorithm::MetropolisHastingsAlgorithm, solution, perturbation)
+    algorithm.acceptance_fn!(solution, perturbation)
+    nothing
 end
 
-function get_guassian_perturbation_fn(σ; rng=Random.GLOBAL_RNG, fraction_to_exclude=0.0)
+function get_guassian_perturbation_fn(parameters::GaussianMHParameters; rng=Random.GLOBAL_RNG)
     bit_array_memoized = Ref{Tuple{BitArray, Int, Int}}()
     return state -> begin
-        delta = Base.similar(state)
+        delta = Base.similar(state) # could also be cached
         randn!(rng, delta)
 
         total_params = length(state)
-        num_parameters = Int(floor(fraction_to_exclude*total_params))
+        num_parameters = Int(floor(parameters.fraction_to_exclude*total_params))
         if (num_parameters > 0)
             if (!isdefined(bit_array_memoized, 1) || bit_array_memoized[][2] != num_parameters || bit_array_memoized[][3] != total_params)
                 parameters_to_exclude = BitArray(i <= num_parameters for i = 1:total_params)
@@ -38,7 +48,7 @@ function get_guassian_perturbation_fn(σ; rng=Random.GLOBAL_RNG, fraction_to_exc
             delta[parameters_to_exclude] .= zero(eltype(delta))
         end
         
-        delta .*= σ
+        delta .*= parameters.σ
         return delta
     end
 end
@@ -56,13 +66,13 @@ function get_undo_perturbation_fn()
         TPS.set_current_state!(solution, state)
     end
 end
-function get_observable_acceptance_fn(s, apply_fn, undo_fn; rng=Random.GLOBAL_RNG)
+function get_observable_acceptance_fn(parameters::GaussianMHParameters, apply_fn, undo_fn; rng=Random.GLOBAL_RNG)
     return (solution, perturbation) -> begin
         obs = TPS.get_observable(TPS.get_problem(solution))
         previous_observation = last(solution)
         apply_fn(solution, perturbation)
         new_observation = TPS.observe(obs, TPS.get_current_state(solution))
-        if rand(rng) <= exp(-s*(new_observation-previous_observation))
+        if rand(rng) <= exp(-parameters.s*(new_observation-previous_observation))
             push!(solution, new_observation)
             return true
         else
@@ -72,15 +82,16 @@ function get_observable_acceptance_fn(s, apply_fn, undo_fn; rng=Random.GLOBAL_RN
         end
     end
 end
-
+# TODO: gaussian not guassian
 function get_guassian_mh_alg(s, σ; rng=Random.GLOBAL_RNG, fraction_to_include=1.0)
     @assert (fraction_to_include >= 0.0 && fraction_to_include <= 1.0) "The fraction of parameters to include should be between 0 and 1 inclusive."
     fraction_to_exclude = 1.0-fraction_to_include
-    perturb_fn = get_guassian_perturbation_fn(σ; rng=rng, fraction_to_exclude=fraction_to_exclude)
+    parameters = GaussianMHParameters(s, σ, fraction_to_exclude)
+    perturb_fn = get_guassian_perturbation_fn(parameters; rng=rng)
     apply_fn = get_apply_perturbation_fn()
     undo_fn = get_undo_perturbation_fn()
-    acpt_fn = get_observable_acceptance_fn(s, apply_fn, undo_fn; rng=rng)
-    return MetropolisHastingsAlgorithm(perturb_fn, apply_fn, undo_fn, acpt_fn)
+    acpt_fn = get_observable_acceptance_fn(parameters, apply_fn, undo_fn; rng=rng)
+    return MetropolisHastingsAlgorithm(perturb_fn, apply_fn, undo_fn, acpt_fn, parameters)
 end
 
 

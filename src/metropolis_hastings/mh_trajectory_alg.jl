@@ -1,6 +1,13 @@
 using Random
 
-function shoot_perturbation(states, static_index, σ, forwards::Bool; rng=Random.GLOBAL_RNG, parameter_exclude_mask=Nothing)
+mutable struct GaussianMHTrajectoryParameters
+    s
+    σ
+    fraction_to_exclude
+    max_width
+end
+
+function shoot_perturbation(states, static_index, σ, forwards::Bool; rng=Random.GLOBAL_RNG, parameter_exclude_mask=nothing)
     T = length(states)
     indices = forwards ? (static_index+1:T) : (static_index-1:-1:1)
     n = length(indices)
@@ -11,7 +18,7 @@ function shoot_perturbation(states, static_index, σ, forwards::Bool; rng=Random
         current_state .+= perturbations[i].*σ
         perturbations[i] .= current_state .- states[indices[i]]
 
-        if (parameter_exclude_mask != Nothing)
+        if (parameter_exclude_mask !== nothing)
             perturbations[i][parameter_exclude_mask] .= zero(eltype(perturbations[i]))
         end
     end
@@ -19,7 +26,7 @@ function shoot_perturbation(states, static_index, σ, forwards::Bool; rng=Random
     return perturbations, indices
 end
 
-function bridge_perturbation(states, start_index, end_index, σ; rng=Random.GLOBAL_RNG, parameter_exclude_mask=Nothing)
+function bridge_perturbation(states, start_index, end_index, σ; rng=Random.GLOBAL_RNG, parameter_exclude_mask=nothing)
     indices = start_index+1:end_index-1
     n = length(indices)
     @assert n>=1
@@ -35,7 +42,7 @@ function bridge_perturbation(states, start_index, end_index, σ; rng=Random.GLOB
         # Calculate the perturbation needed so the change can be reversed
         perturbations[i] .= current_state .- states[indices[i]]
 
-        if (parameter_exclude_mask != Nothing)
+        if (parameter_exclude_mask !== nothing)
             perturbations[i][parameter_exclude_mask] .= zero(eltype(perturbations[i]))
         end
     end
@@ -43,7 +50,7 @@ function bridge_perturbation(states, start_index, end_index, σ; rng=Random.GLOB
     return perturbations, indices
 end
 
-function get_guassian_shooting_perturbation_fn(σ; rng=Random.GLOBAL_RNG, fraction_to_exclude=0.0, max_width=nothing)
+function get_guassian_shooting_perturbation_fn(parameters::GaussianMHTrajectoryParameters; rng=Random.GLOBAL_RNG, fraction_to_exclude=0.0)
     # This function is NOT thread-safe! - might be worth removing the cache here.
 
     function generate_shoot_index_and_direction(T, ::Nothing)
@@ -68,12 +75,14 @@ function get_guassian_shooting_perturbation_fn(σ; rng=Random.GLOBAL_RNG, fracti
     return states -> begin
         T = length(states)
         @assert T >= 2 "You must have at least 2 states in your trajectory to perform shooting."
-
+        max_width = parameters.max_width
+        fraction_to_exclude = parameters.fraction_to_exclude
+        σ = parameters.σ
         # Choose where to shoot from
         static_index, forwards = generate_shoot_index_and_direction(T, max_width)
 
         if (fraction_to_exclude==0.0)
-            parameters_to_exclude = Nothing
+            parameters_to_exclude = nothing
         else
             total_params = length(states[begin])
             num_parameters = Int(floor(fraction_to_exclude*total_params))
@@ -117,18 +126,20 @@ function get_bridging_indices(rng, T, max_size)
 end
 
 
-function get_guassian_bridging_perturbation_fn(σ; rng=Random.GLOBAL_RNG, fraction_to_exclude=0.0, max_width=nothing)
+function get_guassian_bridging_perturbation_fn(parameters::GaussianMHTrajectoryParameters; rng=Random.GLOBAL_RNG)
     # This function is NOT thread-safe! - might be worth removing the cache here.
     bit_array_memoized = Ref{Tuple{BitArray, Int, Int}}()
     return states -> begin
         T = length(states)
         @assert T >= 3 "You must have at least 3 states in your trajectory to perform bridging."
-
+        fraction_to_exclude = parameters.fraction_to_exclude
+        σ = parameters.σ
+        max_width = parameters.max_width
         # Choose where to shoot from
         start_index, end_index = get_bridging_indices(rng, T, max_width)
 
         if (fraction_to_exclude==0.0)
-            parameters_to_exclude = Nothing
+            parameters_to_exclude = nothing
         else
             total_params = length(states[begin])
             num_parameters = Int(floor(fraction_to_exclude*total_params))
@@ -171,7 +182,7 @@ function get_undo_shooting_perturbation_fn()
     end
 end
 
-function get_shooting_observable_acceptance_fn(s, apply_fn, undo_fn; rng=Random.GLOBAL_RNG)
+function get_shooting_observable_acceptance_fn(parameters::GaussianMHTrajectoryParameters, apply_fn, undo_fn; rng=Random.GLOBAL_RNG)
     return (solution, perturbation) -> begin
         obs = TPS.get_observable(TPS.get_problem(solution))
         previous_observation = last(solution)
@@ -179,7 +190,7 @@ function get_shooting_observable_acceptance_fn(s, apply_fn, undo_fn; rng=Random.
         # TODO: Implement an observable which can calculate changes efficiently
         new_observation = TPS.observe(obs, TPS.get_current_state(solution))
         # TODO: Abstract this method to calculate a chance of acceptance - the responsibilities should be separated
-        if rand(rng) <= exp(-s*(new_observation-previous_observation)) 
+        if rand(rng) <= exp(-parameters.s*(new_observation-previous_observation)) 
             push!(solution, new_observation)
             return true
         else
@@ -204,20 +215,22 @@ function get_shooting_mh_alg(s, σ; rng=Random.GLOBAL_RNG, fraction_to_include=1
     @assert (fraction_to_include >= 0.0 && fraction_to_include <= 1.0) "The fraction of parameters to include should be between 0 and 1 inclusive."
     fraction_to_exclude = 1.0-fraction_to_include
 
-    perturb_fn = get_guassian_shooting_perturbation_fn(σ; rng=rng, fraction_to_exclude = fraction_to_exclude)
+    parameters = GaussianMHTrajectoryParameters(s, σ, fraction_to_exclude, nothing)
+    perturb_fn = get_guassian_shooting_perturbation_fn(parameters; rng=rng)
     apply_fn = get_apply_shooting_perturbation_fn()
     undo_fn = get_undo_shooting_perturbation_fn()
-    acpt_fn = get_shooting_observable_acceptance_fn(s, apply_fn, undo_fn; rng=rng)
-    return MetropolisHastingsAlgorithm(perturb_fn, apply_fn, undo_fn, acpt_fn)
+    acpt_fn = get_shooting_observable_acceptance_fn(parameters, apply_fn, undo_fn; rng=rng)
+    return MetropolisHastingsAlgorithm(perturb_fn, apply_fn, undo_fn, acpt_fn, parameters)
 end
 
 function get_shooting_and_bridging_mh_alg(s, σ; rng=Random.GLOBAL_RNG, fraction_to_include=1.0, max_width=nothing)
     @assert (fraction_to_include >= 0.0 && fraction_to_include <= 1.0) "The fraction of parameters to include should be between 0 and 1 inclusive."
     fraction_to_exclude = 1.0-fraction_to_include
 
-    perturb_fn = get_combined_shooting_and_bridging_perturbation_fn(σ; rng=rng, fraction_to_exclude=fraction_to_exclude, max_width=max_width)
+    parameters = GaussianMHTrajectoryParameters(s, σ, fraction_to_exclude, max_width)
+    perturb_fn = get_combined_shooting_and_bridging_perturbation_fn(parameters; rng=rng)
     apply_fn = get_apply_shooting_perturbation_fn()
     undo_fn = get_undo_shooting_perturbation_fn()
-    acpt_fn = get_shooting_observable_acceptance_fn(s, apply_fn, undo_fn; rng=rng)
-    return MetropolisHastingsAlgorithm(perturb_fn, apply_fn, undo_fn, acpt_fn)
+    acpt_fn = get_shooting_observable_acceptance_fn(parameters, apply_fn, undo_fn; rng=rng)
+    return MetropolisHastingsAlgorithm(perturb_fn, apply_fn, undo_fn, acpt_fn, parameters)
 end

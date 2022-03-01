@@ -19,7 +19,7 @@ function get_observable(problem::TPSProblem) end
 # Interface for TPSAlgorithm
 abstract type TPSAlgorithm end
 function init_solution(alg, problem, args...; kwargs...) error("Default solution is not specified.") end
-function step!(solution, alg::TPSAlgorithm, iter) end
+function step!(solution, alg::TPSAlgorithm, iter, args...; kwargs...) end
 
 # Interface for TPSSolution
 abstract type TPSSolution end
@@ -36,6 +36,8 @@ function get_iterator(iter, args...; kwargs...)
         return iter
     end
 end
+# Must override this to be able to access the epoch information
+get_epoch_from_state(iter_state) = iter_state
 
 function solve(problem::TPSProblem, alg::TPSAlgorithm, iterator, args...; kwargs...)
     solution = init_solution(alg, problem, args...; kwargs...)
@@ -49,7 +51,7 @@ function solve(problem::TPSProblem, alg::TPSAlgorithm, iterator, args...; kwargs
     return solution
 end
 
-export solve, TPSProblem, TPSAlgorithm, TPSSolution
+export solve, TPSProblem, TPSAlgorithm, TPSSolution, get_epoch_from_state
 
 ## Includes ##
 include("observables.jl")
@@ -63,6 +65,9 @@ include("metropolis_hastings/mh.jl")
 
 # Convergence
 include("convergence/convergence.jl")
+
+# Annealing
+include("annealing/annealing.jl")
 
 
 end
