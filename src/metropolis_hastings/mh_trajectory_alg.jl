@@ -18,7 +18,7 @@ function shoot_perturbation(states, static_index, σ, forwards::Bool; rng=Random
         current_state .+= perturbations[i].*σ
         perturbations[i] .= current_state .- states[indices[i]]
 
-        if (parameter_exclude_mask !== nothing)
+        if (!isnothing(parameter_exclude_mask))
             perturbations[i][parameter_exclude_mask] .= zero(eltype(perturbations[i]))
         end
     end

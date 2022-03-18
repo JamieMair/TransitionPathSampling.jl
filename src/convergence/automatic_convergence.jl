@@ -43,7 +43,7 @@ function Statistics.var(ensemble::AutomaticConvergenceBuffer)
 end
 
 function Statistics.std(ensemble::AutomaticConvergenceBuffer)
-    return sqrt(Statistics.var(ensemble))
+    return sqrt(max(Statistics.var(ensemble), 0))
 end
 
 struct ConvergenceSolutionWrapper{T<:TPSSolution}
@@ -85,7 +85,7 @@ function Base.iterate(iter::AutomaticConvergenceIterator, state::AutomaticConver
     push!(iter.solution.buffer, last(iter.solution.solution))
     # For warm ups, just iterate to the next state
     if i <= get_warmup_buffer_size(iter.options)
-        return AutomaticConvergenceIteratorState(i+1, (i + 1, current_observable))
+        return (i+1, AutomaticConvergenceIteratorState(i + 1, current_observable))
     elseif i > get_max_iterations(iter.options)
         return nothing
     end
@@ -106,7 +106,7 @@ function Base.iterate(iter::AutomaticConvergenceIterator, state::AutomaticConver
         end
     end
 
-    return AutomaticConvergenceIteratorState(i+1, (i + 1, current_observable))
+    return (i+1, AutomaticConvergenceIteratorState(i + 1, current_observable))
 end
 
 function TPS.get_iterator(options::AutomaticConvergenceOptions, args...; solution, kwargs...)
