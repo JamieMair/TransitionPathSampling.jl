@@ -51,7 +51,7 @@ function bridge_perturbation(states, start_index, end_index, σ; rng=Random.GLOB
 end
 
 function get_guassian_shooting_perturbation_fn(parameters::GaussianMHTrajectoryParameters; rng=Random.GLOBAL_RNG, fraction_to_exclude=0.0)
-    # This function is NOT thread-safe! - might be worth removing the cache here.
+    # TODO: This function is NOT thread-safe! - might be worth removing the cache here.
 
     function generate_shoot_index_and_direction(T, ::Nothing)
         # Choose where to shoot from
@@ -127,7 +127,7 @@ end
 
 
 function get_guassian_bridging_perturbation_fn(parameters::GaussianMHTrajectoryParameters; rng=Random.GLOBAL_RNG)
-    # This function is NOT thread-safe! - might be worth removing the cache here.
+    # TODO: This function is NOT thread-safe! - might be worth removing the cache here.
     bit_array_memoized = Ref{Tuple{BitArray, Int, Int}}()
     return states -> begin
         T = length(states)

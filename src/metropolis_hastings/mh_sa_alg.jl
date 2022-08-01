@@ -30,6 +30,7 @@ function apply_acceptance!(algorithm::MetropolisHastingsAlgorithm, solution, per
     nothing
 end
 
+# TODO - Remove the cache here, as it makes this non-thread safe
 function get_guassian_perturbation_fn(parameters::GaussianMHParameters; rng=Random.GLOBAL_RNG)
     bit_array_memoized = Ref{Tuple{BitArray, Int, Int}}()
     return state -> begin
