@@ -56,7 +56,6 @@ end
 
 function TPS.step!(cache::GaussianMHTrajectoryCache, solution::TPSSolution, alg::GaussianTrajectoryMHAlgorithm, iter, args...; kwargs...) 
     states = TPS.get_current_state(solution)
-    obs = obs = TPS.get_observable(TPS.get_problem(solution))
     fn! = isnothing(alg.parameters.chance_shoot) ? shoot! : shoot_or_bridge!
     fn!(cache, alg.parameters, states)
     accept = acceptance!(cache, states, alg.parameters)
@@ -208,13 +207,6 @@ function shoot_or_bridge!(cache::GaussianMHTrajectoryCache{T, Q}, parameters::Ga
     fn(cache, parameters, states)
 end
 
-macro _check_fraction_domain(val, parameter_name)
-    quote
-        if !isnothing($(esc(val))) && ($(esc(val)) < 0.0 && $(esc(val)) > 1.0)
-            throw(DomainError($(esc(val)), string($(esc(parameter_name)), " must be between 0 and 1 inclusive.")))
-        end
-    end
-end
 
 function gaussian_trajectory_algorithm(s, σ; chance_to_shoot = nothing, params_changed_frac = 1.0, max_width::Union{Nothing, Int} = nothing)
     @_check_fraction_domain chance_to_shoot "Chance to shoot"
