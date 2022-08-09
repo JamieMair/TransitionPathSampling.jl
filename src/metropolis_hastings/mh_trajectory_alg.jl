@@ -62,7 +62,7 @@ function TPS.step!(cache::GaussianMHTrajectoryCache, solution::TPSSolution, alg:
     if accept
         TPS.set_current_state!(solution, states)
     end
-    push!(solution, cache.last_observation)
+    push!(solution, cache.total_observation)
     # ToDo specialise on the type of solution to record more details
     nothing
 end

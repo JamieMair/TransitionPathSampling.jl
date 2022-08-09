@@ -18,9 +18,12 @@ function get_trajectory_length(problem::DTProblem)
     length(problem.states)
 end
 function TPS.init_solution(alg, problem::T, args...; kwargs...) where {T<:AbstractDiscreteTrajectoryProblem}
-    sol = SimpleSolution(problem, alg)
-    return sol
+    observable = TPS.get_observable(problem)
+    state = TPS.get_initial_state(problem)
+    initial_observable = sum(TPS.observe(observable, state))
+    return SimpleSolution([initial_observable], problem, alg, deepcopy(state))
 end
+
 
 export DTProblem, get_trajectory_length, AbstractDiscreteTrajectoryProblem
 
