@@ -75,3 +75,17 @@ end
         test_alg_masking(alg)
     end
 end
+
+
+@testset "Test solve with simulated annealing algorithms" begin
+    @testset "All parameters" begin
+        alg = TPS.MetropolisHastings.gaussian_sa_algorithm(s, σ);
+        problem = test_problem(d)
+        @test typeof(solve(problem, alg, iter)) <: TPSSolution
+    end
+    @testset "Half parameters" begin
+        alg = TPS.MetropolisHastings.gaussian_sa_algorithm(s, σ, params_changed_frac=0.5);
+        problem = test_problem(d)
+        @test typeof(solve(problem, alg, iter)) <: TPSSolution
+    end
+end

@@ -94,11 +94,11 @@ end
 
 function bridge!(cache::GaussianMHTrajectoryCache{T, Q}, states::Q, start_index, end_index, σ) where {T, Q}
     indices = start_index+1:end_index-1
-    n = length(indices)
+    n = length(indices) + 1
     state_cache = cache.state_cache
     current_state = states[start_index]
     final_state = states[end_index]
-    for t in 1:n
+    for t in 1:(n-1)
         i = indices[t]
         sigma = σ*sqrt((n-t)/(n-t+1)) # Variance is time dependent
         randn!(state_cache[i])

@@ -81,6 +81,8 @@ end
     end
     @testset "Test bridge in middle" begin
         test_bridge(3, 7)
+        test_bridge(2, 8)
+        test_bridge(1, 4)
     end
 end
 
@@ -160,6 +162,11 @@ end
     end
     @testset "Test bridging + shooting algorithm (single element)" begin
         alg = TPS.MetropolisHastings.gaussian_trajectory_algorithm(s, σ; params_changed_frac=1.0, chance_to_shoot=0.5, max_width=1);
+        problem = test_problem(n, d)
+        @test typeof(solve(problem, alg, iter)) <: TPSSolution
+    end
+    @testset "Test bridging + shooting algorithm (single element), half parameters" begin
+        alg = TPS.MetropolisHastings.gaussian_trajectory_algorithm(s, σ; params_changed_frac=0.5, chance_to_shoot=0.5, max_width=3);
         problem = test_problem(n, d)
         @test typeof(solve(problem, alg, iter)) <: TPSSolution
     end
