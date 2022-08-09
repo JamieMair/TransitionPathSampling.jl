@@ -22,11 +22,11 @@ Base.@kwdef mutable struct GaussianMHTrajectoryCache{T,Q<:AbstractArray{T},X,K<:
     observable::W
 end
 
-struct GaussianTrajectoryMHAlgorithm <: AbstractMetropolisHastingsAlg
+struct GaussianTrajectoryAlgorithm <: AbstractMetropolisHastingsAlg
     parameters::GaussianMHTrajectoryParameters
 end
 
-function TPS.generate_cache(alg::GaussianTrajectoryMHAlgorithm, problem::TPSProblem)
+function TPS.generate_cache(alg::GaussianTrajectoryAlgorithm, problem::TPSProblem)
     initial_state = TPS.get_initial_state(problem)
     state_cache = [similar(s) for s in initial_state]
     num_models = length(state_cache)
@@ -54,7 +54,7 @@ function TPS.generate_cache(alg::GaussianTrajectoryMHAlgorithm, problem::TPSProb
     )
 end
 
-function TPS.step!(cache::GaussianMHTrajectoryCache, solution::TPSSolution, alg::GaussianTrajectoryMHAlgorithm, iter, args...; kwargs...) 
+function TPS.step!(cache::GaussianMHTrajectoryCache, solution::TPSSolution, alg::GaussianTrajectoryAlgorithm, iter, args...; kwargs...) 
     states = TPS.get_current_state(solution)
     fn! = isnothing(alg.parameters.chance_shoot) ? shoot! : shoot_or_bridge!
     fn!(cache, alg.parameters, states)
@@ -208,10 +208,10 @@ function shoot_or_bridge!(cache::GaussianMHTrajectoryCache{T, Q}, parameters::Ga
 end
 
 
-function gaussian_trajectory_algorithm(s, σ; chance_to_shoot = nothing, params_changed_frac = 1.0, max_width::Union{Nothing, Int} = nothing)
+function gaussian_trajectory_algorithm(s, σ; chance_to_shoot = nothing, params_changed_frac = nothing, max_width::Union{Nothing, Int} = nothing)
     @_check_fraction_domain chance_to_shoot "Chance to shoot"
     @_check_fraction_domain params_changed_frac "Fraction of changed parameters"
 
     parameters = GaussianMHTrajectoryParameters(s, σ, params_changed_frac, chance_to_shoot, max_width)
-    return GaussianTrajectoryMHAlgorithm(parameters)
+    return GaussianTrajectoryAlgorithm(parameters)
 end

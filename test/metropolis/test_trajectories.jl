@@ -21,7 +21,7 @@ function test_problem(n, d)
 end
 
 s = 0.0
-σ = 100.0
+σ = 100000.0
 n = 8
 d = 10
 iter = 1:10
@@ -60,29 +60,27 @@ end
 
 @testset "Test bridge method" begin
     problem = test_problem(n, d)
-    @testset "Test bridge with all parameters" begin
-        alg = TPS.MetropolisHastings.gaussian_trajectory_algorithm(s, σ);
-        states = deepcopy(TPS.get_initial_state(problem))
-        cache = TPS.generate_cache(alg, problem)
-        function test_bridge(start_index, end_index)
-            temp_cache = deepcopy(cache)
-            range = (start_index+1):(end_index-1)
-            TPS.MetropolisHastings.bridge!(cache, states, start_index, end_index, σ)
-            for i in 1:n
-                if i in range
-                    @test !any(isapprox.(temp_cache.state_cache[i], states[i]))
-                else
-                    @test all(temp_cache.state_cache[i] .== cache.state_cache[i])
-                end
+    alg = TPS.MetropolisHastings.gaussian_trajectory_algorithm(s, σ);
+    states = deepcopy(TPS.get_initial_state(problem))
+    cache = TPS.generate_cache(alg, problem)
+    function test_bridge(start_index, end_index)
+        temp_cache = deepcopy(cache)
+        range = (start_index+1):(end_index-1)
+        TPS.MetropolisHastings.bridge!(temp_cache, states, start_index, end_index, σ)
+        for i in 1:n
+            if i in range
+                @test all(temp_cache.state_cache[i] .!= cache.state_cache[i])
+            else
+                @test all(temp_cache.state_cache[i] .== cache.state_cache[i])
             end
-            nothing
         end
-        @testset "Test bridge from both ends" begin
-            test_bridge(1, n)
-        end
-        @testset "Test bridge in middle" begin
-            test_bridge(3, 7)
-        end
+        nothing
+    end
+    @testset "Test bridge from both ends" begin
+        test_bridge(1, n)
+    end
+    @testset "Test bridge in middle" begin
+        test_bridge(3, 7)
     end
 end
 
@@ -95,7 +93,7 @@ end
 
         function test_shoot(start_index, forwards)
             temp_cache = deepcopy(cache)
-            TPS.MetropolisHastings.shoot!(cache, states, start_index, σ, forwards)
+            TPS.MetropolisHastings.shoot!(temp_cache, states, start_index, σ, forwards)
             shoot_indices = forwards ? ((start_index + 1):n) : ((start_index - 1):-1:1)
             for i = 1:n
                 if i in shoot_indices
@@ -126,7 +124,6 @@ end
     function test_alg_masking(alg)
         states = deepcopy(TPS.get_initial_state(problem))
         cache = TPS.generate_cache(alg, problem)
-        master_cache = deepcopy(cache)
         changed_indices = 3:6
         # Mutate the variables inside
         for i in changed_indices

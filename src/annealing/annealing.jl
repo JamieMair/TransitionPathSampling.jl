@@ -10,7 +10,10 @@ abstract type SingleParameterAnnealedAlgorithm <: AbstractAnnealedAlgorithm end
 get_symbol(alg::SingleParameterAnnealedAlgorithm) = throw("Unimplemented exception.")
 calculate_parameter_value(alg::SingleParameterAnnealedAlgorithm, epoch) = throw("Unimplemented exception.")
 get_parameters_object(alg) = getfield(alg, :parameters)
-get_parameters_object(alg::MetropolisHastingsAlgorithm) = alg.parameters
+get_parameters_object(alg::TPS.MetropolisHastings.AbstractMetropolisHastingsAlg) = throw("Unimplemented exception.")
+get_parameters_object(alg::TPS.MetropolisHastings.GaussianSAAlgorithm) = alg.parameters
+get_parameters_object(alg::TPS.MetropolisHastings.GaussianTrajectoryAlgorithm) = alg.parameters
+
 function set_parameter!(algorithm::SingleParameterAnnealedAlgorithm, parameter_value)
     main_algorithm = get_main_algorithm(algorithm)
     parameters = get_parameters_object(main_algorithm)

@@ -55,7 +55,7 @@ end
 
 function mask_cache!(cache::GaussianSACache{Q}, state::Q) where {Q}
     if cache.use_mask
-        state.cache[cache.exclude_parameter_mask] .= state[cache.exclude_parameter_mask]
+        cache.state[cache.exclude_parameter_mask] .= state[cache.exclude_parameter_mask]
     end
     nothing
 end
@@ -84,7 +84,7 @@ function acceptance!(cache::GaussianSACache{Q}, state::Q, parameters::GaussianSA
 end
 
 
-function gaussian_sa_algorithm(s, σ; params_changed_frac=1.0)
+function gaussian_sa_algorithm(s, σ; params_changed_frac=nothing)
     @_check_fraction_domain params_changed_frac "Fraction of changed parameters"
     
     parameters = GaussianSAParameters(s, σ, params_changed_frac)

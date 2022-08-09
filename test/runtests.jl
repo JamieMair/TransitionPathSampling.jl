@@ -6,6 +6,9 @@ using SafeTestsets
 end
 
 @safetestset "Trajectories" begin
-    include("trajectories/test_trajectories.jl")
+    include("metropolis/test_trajectories.jl")
 end
 
+@safetestset "Simulated Annealing" begin
+    include("metropolis/test_sa.jl")
+end
