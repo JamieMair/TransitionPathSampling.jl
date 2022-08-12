@@ -76,7 +76,5 @@ include("convergence/convergence.jl")
 # Annealing
 include("annealing/annealing.jl")
 
-# Callbacks
-include("callbacks.jl")
 
 end
