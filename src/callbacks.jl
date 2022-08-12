@@ -48,7 +48,7 @@ run(cb::FinalisationCallback, deps) = cb.fn(deps)
 run(cb::PreInnerLoopCallback, deps) = cb.fn(deps)
 run(cb::PostInnerLoopCallback, deps) = cb.fn(deps)
 
-struct CallbackSet{A<:Union{Nothing, NTuple},B<:Union{Nothing, NTuple},C<:Union{Nothing, NTuple},D<:Union{Nothing, NTuple}}
+struct CallbackSet{A<:Union{Nothing,NTuple},B<:Union{Nothing,NTuple},C<:Union{Nothing,NTuple},D<:Union{Nothing,NTuple}}
     initialisation_callbacks::A
     finalisation_callbacks::B
     pre_inner_loop_callbacks::C
@@ -136,7 +136,7 @@ function run_cb_post_inner_loop!(cb::CallbackSet, deps::SolveDependencies)
         end
     end
     nothing
-end 
+end
 
 export InitialisationCallback, FinalisationCallback, PreInnerLoopCallback, PostInnerLoopCallback, CallbackSet
 
