@@ -28,7 +28,6 @@ set_current_state!(solution::TPSSolution, state) = error("Unimplemented.")
 get_observable_type(solution::TPSSolution) = error("Unimplemented.")
 
 
-function finalise_solution!(solution::TPSSolution) nothing end
 function step!(solution::TPSSolution, alg::TPSAlgorithm, iter, args...; kwargs...) end
 function step!(::Nothing, solution::TPSSolution, alg::TPSAlgorithm, iter, args...; kwargs...) 
     step!(solution::TPSSolution, alg::TPSAlgorithm, iter, args...; kwargs...)
@@ -46,17 +45,6 @@ end
 # Must override this to be able to access the epoch information
 get_epoch_from_state(iter_state) = iter_state
 
-function solve(problem::TPSProblem, alg::TPSAlgorithm, iterator, args...; kwargs...)
-    solution = init_solution(alg, problem, args...; kwargs...)
-    iter = get_iterator(iterator; problem=problem, solution=solution, algorithm=alg)
-    cache = generate_cache(alg, problem, args...; kwargs...)
-    for iter_state in iter
-        step!(cache, solution, alg, iter_state, args...; kwargs...)
-    end
-
-    finalise_solution!(solution)    
-    return solution
-end
 
 export solve, TPSProblem, TPSAlgorithm, TPSSolution, get_epoch_from_state
 
@@ -75,6 +63,27 @@ include("convergence/convergence.jl")
 
 # Annealing
 include("annealing/annealing.jl")
+
+# Callbacks
+include("callbacks.jl")
+
+import .Callbacks: run_cb_at_initialisation!, run_cb_at_finalisation!, run_cb_pre_inner_loop!, run_cb_post_inner_loop!, SolveDependencies, AbstractCallback
+
+function solve(problem::TPSProblem, alg::TPSAlgorithm, iterator, args...; cb::Union{Nothing, AbstractCallback}=nothing, kwargs...)
+    solution = init_solution(alg, problem, args...; kwargs...)
+    iter = get_iterator(iterator; problem=problem, solution=solution, algorithm=alg)
+    cache = generate_cache(alg, problem, args...; kwargs...)
+
+    run_cb_at_initialisation!(cb, SolveDependencies(problem=problem, solution=solution, algorithm=alg, cache=cache))
+    for iter_state in iter
+        run_cb_pre_inner_loop!(cb, SolveDependencies(problem=problem, solution=solution, algorithm=alg, cache=cache, iterator_state=iter_state))
+        step!(cache, solution, alg, iter_state, args...; kwargs...)
+        run_cb_post_inner_loop!(cb, SolveDependencies(problem=problem, solution=solution, algorithm=alg, cache=cache, iterator_state=iter_state))
+    end
+    run_cb_at_finalisation!(cb, SolveDependencies(problem=problem, solution=solution, algorithm=alg, cache=cache))
+
+    return solution
+end
 
 
 end
