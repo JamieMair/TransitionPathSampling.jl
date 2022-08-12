@@ -18,9 +18,7 @@ function get_observable(problem::TPSProblem) end
 
 # Interface for TPSAlgorithm
 abstract type TPSAlgorithm end
-function init_solution(alg, problem, args...; kwargs...)
-    error("Default solution is not specified.")
-end
+function init_solution(alg, problem, args...; kwargs...) error("Default solution is not specified.") end
 
 # Interface for TPSSolution
 abstract type TPSSolution end
@@ -31,16 +29,14 @@ get_observable_type(solution::TPSSolution) = error("Unimplemented.")
 
 
 function step!(solution::TPSSolution, alg::TPSAlgorithm, iter, args...; kwargs...) end
-function step!(::Nothing, solution::TPSSolution, alg::TPSAlgorithm, iter, args...; kwargs...)
+function step!(::Nothing, solution::TPSSolution, alg::TPSAlgorithm, iter, args...; kwargs...) 
     step!(solution::TPSSolution, alg::TPSAlgorithm, iter, args...; kwargs...)
 end
 function step!(cache, solution::TPSSolution, alg::TPSAlgorithm, iter, args...; kwargs...) end
-function generate_cache(alg::TPSAlgorithm, problem::TPSProblem, args...; kwargs...)
-    nothing
-end
+function generate_cache(alg::TPSAlgorithm, problem::TPSProblem, args...; kwargs...) nothing end
 
 function get_iterator(iter, args...; kwargs...)
-    if typeof(iter) == Int
+    if typeof(iter)==Int
         return 1:iter
     else
         return iter
@@ -73,7 +69,7 @@ include("callbacks.jl")
 
 import .Callbacks: run_cb_at_initialisation!, run_cb_at_finalisation!, run_cb_pre_inner_loop!, run_cb_post_inner_loop!, SolveDependencies, AbstractCallback
 
-function solve(problem::TPSProblem, alg::TPSAlgorithm, iterator, args...; cb::Union{Nothing,AbstractCallback}=nothing, kwargs...)
+function solve(problem::TPSProblem, alg::TPSAlgorithm, iterator, args...; cb::Union{Nothing, AbstractCallback}=nothing, kwargs...)
     solution = init_solution(alg, problem, args...; kwargs...)
     iter = get_iterator(iterator; problem=problem, solution=solution, algorithm=alg)
     cache = generate_cache(alg, problem, args...; kwargs...)
