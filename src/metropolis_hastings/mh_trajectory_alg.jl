@@ -9,7 +9,7 @@ Base.@kwdef mutable struct GaussianMHTrajectoryParameters{T<:Real, K<:Union{Noth
     max_width::Q
 end
 
-Base.@kwdef mutable struct GaussianMHTrajectoryCache{T,Q<:AbstractArray{T},X,K<:AbstractArray{X},V,W<:AbstractObservable}
+Base.@kwdef mutable struct GaussianMHTrajectoryCache{T,Q<:AbstractArray{T},X,K<:AbstractArray{X},V,W<:AbstractObservable} <: AbstractMetropolisHastingsCache
     state_cache::Q
     exclude_parameter_mask::V
     total_observation::X
@@ -20,6 +20,7 @@ Base.@kwdef mutable struct GaussianMHTrajectoryCache{T,Q<:AbstractArray{T},X,K<:
     num_models::Int
     num_parameters::Int
     observable::W
+    last_accepted::Bool = false
 end
 
 struct GaussianTrajectoryAlgorithm <: AbstractMetropolisHastingsAlg
@@ -36,7 +37,7 @@ function TPS.generate_cache(alg::GaussianTrajectoryAlgorithm, problem::TPSProble
     exclude_parameter_mask = BitArray(i > num_params_to_change for i in 1:num_parameters)
     observable = TPS.get_observable(problem)
     observations = TPS.observe(observable, initial_state)
-    @assert typeof(observations)<:AbstractArray "The observation function does not a vector of observations for each state."
+    @assert typeof(observations)<:AbstractArray "The observation function does not return a vector of observations for each state in the trajectory."
     total_observation = sum(observations)
     indices_changed = 1:num_models
 
@@ -59,6 +60,7 @@ function TPS.step!(cache::GaussianMHTrajectoryCache, solution::TPSSolution, alg:
     fn! = isnothing(alg.parameters.chance_shoot) ? shoot! : shoot_or_bridge!
     fn!(cache, alg.parameters, states)
     accept = acceptance!(cache, states, alg.parameters)
+    cache.last_accepted = accept
     if accept
         TPS.set_current_state!(solution, states)
     end

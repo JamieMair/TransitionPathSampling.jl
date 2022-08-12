@@ -6,13 +6,14 @@ Base.@kwdef mutable struct GaussianSAParameters{T<:Real, K<:Union{Nothing, Real}
     fraction_to_include::K
 end
 
-Base.@kwdef mutable struct GaussianSACache{Q,K,V,W<:AbstractObservable}
+Base.@kwdef mutable struct GaussianSACache{Q,K,V,W<:AbstractObservable} <: AbstractMetropolisHastingsCache
     state::Q
     last_observation::K
     exclude_parameter_mask::V
     use_mask::Bool
     num_parameters::Int
     observable::W
+    last_accepted::Bool = false
 end
 
 
@@ -45,6 +46,7 @@ function TPS.step!(cache::GaussianSACache, solution::TPSSolution, alg::GaussianS
     state = TPS.get_current_state(solution)
     perturb!(cache, state, alg.parameters.σ)
     accept = acceptance!(cache, state, alg.parameters)
+    cache.last_accepted = accept
     if accept
         TPS.set_current_state!(solution, state)
     end
