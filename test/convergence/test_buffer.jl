@@ -2,6 +2,7 @@ using TPS
 using TPS.Convergence
 using Test
 using Statistics
+using SafeTestsets
 
 @testset "Buffer Statistics" begin
     

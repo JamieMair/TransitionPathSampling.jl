@@ -1,6 +1,18 @@
 using TPS
-using Test
+using SafeTestsets
 
-@testset "TPS.jl" begin
+@safetestset "Convergence" begin
     include("convergence/test_convergence.jl")
+end
+
+@safetestset "Trajectories" begin
+    include("metropolis/test_trajectories.jl")
+end
+
+@safetestset "Simulated Annealing" begin
+    include("metropolis/test_sa.jl")
+end
+
+@safetestset "Callbacks" begin
+    include("callbacks/test_callbacks.jl")
 end

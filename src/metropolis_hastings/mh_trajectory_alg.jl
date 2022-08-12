@@ -1,223 +1,217 @@
 using Random
+using Base
 
-function shoot_perturbation(states, static_index, σ, forwards::Bool; rng=Random.GLOBAL_RNG, parameter_exclude_mask=Nothing)
-    T = length(states)
-    indices = forwards ? (static_index+1:T) : (static_index-1:-1:1)
-    n = length(indices)
-    perturbations = [similar(states[i]) for i in 1:n]
-    current_state = deepcopy(states[static_index])
-    for i=1:n
-        randn!(rng, perturbations[i])
-        current_state .+= perturbations[i].*σ
-        perturbations[i] .= current_state .- states[indices[i]]
-
-        if (parameter_exclude_mask != Nothing)
-            perturbations[i][parameter_exclude_mask] .= zero(eltype(perturbations[i]))
-        end
-    end
-
-    return perturbations, indices
+Base.@kwdef mutable struct GaussianMHTrajectoryParameters{T<:Real, K<:Union{Nothing, Real}, X<:Union{Nothing, Real}, Q<:Union{Nothing,Int}}
+    s::T
+    σ::T
+    fraction_to_include::K
+    chance_shoot::X
+    max_width::Q
 end
 
-function bridge_perturbation(states, start_index, end_index, σ; rng=Random.GLOBAL_RNG, parameter_exclude_mask=Nothing)
+Base.@kwdef mutable struct GaussianMHTrajectoryCache{T,Q<:AbstractArray{T},X,K<:AbstractArray{X},V,W<:AbstractObservable}
+    state_cache::Q
+    exclude_parameter_mask::V
+    total_observation::X
+    last_observation::K
+    cached_observation::K
+    use_mask::Bool
+    indices_changed::Union{StepRange, UnitRange}
+    num_models::Int
+    num_parameters::Int
+    observable::W
+end
+
+struct GaussianTrajectoryAlgorithm <: AbstractMetropolisHastingsAlg
+    parameters::GaussianMHTrajectoryParameters
+end
+
+function TPS.generate_cache(alg::GaussianTrajectoryAlgorithm, problem::TPSProblem)
+    initial_state = TPS.get_initial_state(problem)
+    state_cache = [similar(s) for s in initial_state]
+    num_models = length(state_cache)
+    num_parameters = length(first(state_cache))
+    num_params_to_change = !isnothing(alg.parameters.fraction_to_include) ? max(1, min(num_parameters, Int(round(alg.parameters.fraction_to_include * num_parameters)))) : num_parameters
+    use_mask = (num_parameters != num_params_to_change)
+    exclude_parameter_mask = BitArray(i > num_params_to_change for i in 1:num_parameters)
+    observable = TPS.get_observable(problem)
+    observations = TPS.observe(observable, initial_state)
+    @assert typeof(observations)<:AbstractArray "The observation function does not a vector of observations for each state."
+    total_observation = sum(observations)
+    indices_changed = 1:num_models
+
+    return GaussianMHTrajectoryCache(
+        state_cache=state_cache,
+        exclude_parameter_mask=exclude_parameter_mask,
+        total_observation=total_observation,
+        last_observation=observations,
+        cached_observation=deepcopy(observations),
+        use_mask=use_mask,
+        indices_changed=indices_changed,
+        num_models = num_models,
+        num_parameters=num_parameters,
+        observable=observable
+    )
+end
+
+function TPS.step!(cache::GaussianMHTrajectoryCache, solution::TPSSolution, alg::GaussianTrajectoryAlgorithm, iter, args...; kwargs...) 
+    states = TPS.get_current_state(solution)
+    fn! = isnothing(alg.parameters.chance_shoot) ? shoot! : shoot_or_bridge!
+    fn!(cache, alg.parameters, states)
+    accept = acceptance!(cache, states, alg.parameters)
+    if accept
+        TPS.set_current_state!(solution, states)
+    end
+    push!(solution, cache.total_observation)
+    # ToDo specialise on the type of solution to record more details
+    nothing
+end
+
+function mask_cache!(cache::GaussianMHTrajectoryCache{T, Q}, states::Q) where {T, Q}
+    state_cache = cache.state_cache
+    if cache.use_mask
+        for i in cache.indices_changed
+            state_cache[i][cache.exclude_parameter_mask] .= states[i][cache.exclude_parameter_mask]
+        end
+    end
+    nothing
+end
+
+function shoot!(cache::GaussianMHTrajectoryCache{T, Q}, states::Q, static_index, σ, forwards) where {T, Q}
+    indices = forwards ? (static_index+1:length(states)) : (static_index-1:-1:1)
+    state_cache = cache.state_cache
+    current_cache = states[static_index]
+    for i in indices
+        randn!(state_cache[i])
+        state_cache[i] .= current_cache .+  state_cache[i] .* σ
+        
+        current_cache = state_cache[i]
+    end
+    cache.indices_changed = indices
+    mask_cache!(cache, states)
+    nothing
+end
+
+function bridge!(cache::GaussianMHTrajectoryCache{T, Q}, states::Q, start_index, end_index, σ) where {T, Q}
     indices = start_index+1:end_index-1
-    n = length(indices)
-    @assert n>=1
-    perturbations = [similar(states[i]) for i in 1:n]
-    current_state = deepcopy(states[start_index])
+    n = length(indices) + 1
+    state_cache = cache.state_cache
+    current_state = states[start_index]
     final_state = states[end_index]
-    for i=1:n
-        sigma = σ*sqrt((n-i)/(n-i+1)) # Variance is time dependent
-        randn!(rng, perturbations[i]) # Normal distribution
+    for t in 1:(n-1)
+        i = indices[t]
+        sigma = σ*sqrt((n-t)/(n-t+1)) # Variance is time dependent
+        randn!(state_cache[i])
         # Choose current state according to μ(x_(t-1), t) and v(x,t)
-        current_state .= perturbations[i].*sigma .+ final_state ./ (n-i+1) .+ current_state .* ((n-i)/(n-i+1))
-
-        # Calculate the perturbation needed so the change can be reversed
-        perturbations[i] .= current_state .- states[indices[i]]
-
-        if (parameter_exclude_mask != Nothing)
-            perturbations[i][parameter_exclude_mask] .= zero(eltype(perturbations[i]))
-        end
+        state_cache[i] .= state_cache[i].*sigma .+ final_state ./ (n-t+1) .+ current_state .* ((n-t)/(n-t+1))
+        
+        current_state = state_cache[i]
     end
-
-    return perturbations, indices
+    cache.indices_changed = indices
+    mask_cache!(cache, states)
+    nothing
 end
-
-function get_guassian_shooting_perturbation_fn(σ; rng=Random.GLOBAL_RNG, fraction_to_exclude=0.0, max_width=nothing)
-    # This function is NOT thread-safe! - might be worth removing the cache here.
-
-    function generate_shoot_index_and_direction(T, ::Nothing)
-        # Choose where to shoot from
-        static_index = rand(rng, 1:T)
-        forwards = rand(rng, [true false])
-        if static_index==1
-            forwards = true
-        elseif static_index==T
-            forwards = false
-        end
-        return static_index, forwards
-    end
-    function generate_shoot_index_and_direction(T, max_width)
-        forwards = rand(rng, [true false])
-        w = min(T-1, max_width)
-        static_index = forwards ? T-rand(rng, 1:w) : rand(rng, 1:w)+1
-        return static_index, forwards
-    end
-
-    bit_array_memoized = Ref{Tuple{BitArray, Int, Int}}()
-    return states -> begin
-        T = length(states)
-        @assert T >= 2 "You must have at least 2 states in your trajectory to perform shooting."
-
-        # Choose where to shoot from
-        static_index, forwards = generate_shoot_index_and_direction(T, max_width)
-
-        if (fraction_to_exclude==0.0)
-            parameters_to_exclude = Nothing
-        else
-            total_params = length(states[begin])
-            num_parameters = Int(floor(fraction_to_exclude*total_params))
-            if (!isdefined(bit_array_memoized, 1) || bit_array_memoized[][2] != num_parameters || bit_array_memoized[][3] != total_params)
-                parameters_to_exclude = BitArray(i <= num_parameters for i = 1:total_params)
-                bit_array_memoized[] = (parameters_to_exclude, num_parameters, total_params)
-            end
-
-            parameters_to_exclude = bit_array_memoized[][1]
-            Random.shuffle!(rng, parameters_to_exclude)
-        end
-
-        return shoot_perturbation(states, static_index, σ, forwards; rng=rng, parameter_exclude_mask=parameters_to_exclude)
+function _shoot_index_and_direction(T, ::Nothing)
+    idx = rand(1:T)
+    if idx == 1
+        return (idx, true)
+    elseif idx == T
+        return (idx, false)
+    else
+        return (idx, rand() < 0.5)
     end
 end
+function _shoot_index_and_direction(T, max_width)
+    forwards = rand() < 0.5
+    w = min(T-1, max_width)
+    idx = forwards ? T-rand(1:w) : rand(1:w)+1
+    return idx, forwards
+end
 
-function get_bridging_indices(rng, T, ::Nothing)
-    T==3 && return 1,3
-    
-    a,b = sort(randperm(rng, T)[1:2])
-    while abs(a-b) <= 1
-        a,b = sort(randperm(rng, T)[1:2])
+function shoot!(cache::GaussianMHTrajectoryCache{T, Q}, parameters::GaussianMHTrajectoryParameters, states::Q) where {T, Q}
+    idx, forwards = _shoot_index_and_direction(cache.num_models, parameters.max_width)
+    if cache.use_mask
+        Random.shuffle!(cache.exclude_parameter_mask)
+    end
+    shoot!(cache, states, idx, parameters.σ, forwards)
+end
+
+function _sorted_rand_two_items(max_value)
+    first_item = rand(1:max_value)
+    second_item = rand(2:max_value)
+    if second_item == first_item
+        second_item = 1
+    end
+    return min(first_item, second_item), max(first_item, second_item)
+end
+
+function _bridge_indices(T, ::Nothing)
+    T==3 && return 1,3 # Special case with no choice
+    a,b = _sorted_rand_two_items(T)
+    while b-a <= 1
+        a,b = _sorted_rand_two_items(T)
     end
     return a,b
 end
-function get_bridging_indices(rng, T, max_size)
+function _bridge_indices(T, max_size)
     T==3 && return 1,3 # Special case with no choice
 
-    fixed_index = rand(rng, 1:T)    
+    fixed_index = rand(1:T)    
     
     if fixed_index < 3
         forwards = true
     elseif fixed_index > T-2
         forwards = false
     else
-        forwards = rand(rng, (true, false))
+        forwards = rand((true, false))
     end
     direction = forwards ? 1 : -1
     second_index = max(1, min(T, fixed_index + direction*(max_size+1)))
     return min(fixed_index, second_index), max(fixed_index, second_index)
 end
 
-
-function get_guassian_bridging_perturbation_fn(σ; rng=Random.GLOBAL_RNG, fraction_to_exclude=0.0, max_width=nothing)
-    # This function is NOT thread-safe! - might be worth removing the cache here.
-    bit_array_memoized = Ref{Tuple{BitArray, Int, Int}}()
-    return states -> begin
-        T = length(states)
-        @assert T >= 3 "You must have at least 3 states in your trajectory to perform bridging."
-
-        # Choose where to shoot from
-        start_index, end_index = get_bridging_indices(rng, T, max_width)
-
-        if (fraction_to_exclude==0.0)
-            parameters_to_exclude = Nothing
-        else
-            total_params = length(states[begin])
-            num_parameters = Int(floor(fraction_to_exclude*total_params))
-            if (!isdefined(bit_array_memoized, 1) || bit_array_memoized[][2] != num_parameters || bit_array_memoized[][3] != total_params)
-                parameters_to_exclude = BitArray(i <= num_parameters for i = 1:total_params)
-                bit_array_memoized[] = (parameters_to_exclude, num_parameters, total_params)
-            end
-
-            parameters_to_exclude = bit_array_memoized[][1]
-            Random.shuffle!(rng, parameters_to_exclude)
-        end
-        
-        return bridge_perturbation(states, start_index, end_index, σ; rng=rng, parameter_exclude_mask=parameters_to_exclude)
+function bridge!(cache::GaussianMHTrajectoryCache{T, Q}, parameters::GaussianMHTrajectoryParameters, states::Q) where {T, Q}
+    start_index, end_index = _bridge_indices(cache.num_models, parameters.max_width)
+    if cache.use_mask
+        Random.shuffle!(cache.exclude_parameter_mask)
     end
+    bridge!(cache, states, start_index, end_index, parameters.σ)
 end
 
-function get_apply_shooting_perturbation_fn()
-    return (solution, perturbation) -> begin
-        # Unpack the combined state of the perturbation
-        perturbations, indices = perturbation
-        state = get_current_state(solution)
-        for (p, state_idx) in zip(perturbations, indices)
-            state[state_idx] .+= p
-        end
-        set_current_state!(solution, state)
-        nothing
+function apply!(states::Q, cache::GaussianMHTrajectoryCache{T, Q}) where {T, Q}
+    for i in cache.indices_changed
+        copyto!(states[i], cache.state_cache[i])
     end
+    nothing
 end
 
-function get_undo_shooting_perturbation_fn()
-    return (solution, perturbation) -> begin
-        # Unpack the combined state of the perturbation
-        perturbations, indices = perturbation
-        state = get_current_state(solution)
-        for (p, state_idx) in zip(perturbations, indices)
-            state[state_idx] .-= p
-        end
-        set_current_state!(solution, state)
-        nothing
+function acceptance!(cache::GaussianMHTrajectoryCache{T, Q}, states::Q, parameters::GaussianMHTrajectoryParameters) where {T, Q}
+    TPS.observe!(cache.cached_observation, cache.observable, cache.state_cache, cache.indices_changed)
+    delta_obs = zero(eltype(cache.cached_observation))
+    for i in cache.indices_changed
+        delta_obs += cache.cached_observation[i] - cache.last_observation[i]
     end
-end
-
-function get_shooting_observable_acceptance_fn(s, apply_fn, undo_fn; rng=Random.GLOBAL_RNG)
-    return (solution, perturbation) -> begin
-        obs = TPS.get_observable(TPS.get_problem(solution))
-        previous_observation = last(solution)
-        apply_fn(solution, perturbation)
-        # TODO: Implement an observable which can calculate changes efficiently
-        new_observation = TPS.observe(obs, TPS.get_current_state(solution))
-        # TODO: Abstract this method to calculate a chance of acceptance - the responsibilities should be separated
-        if rand(rng) <= exp(-s*(new_observation-previous_observation)) 
-            push!(solution, new_observation)
-            return true
-        else
-            push!(solution, previous_observation)
-            undo_fn(solution, perturbation)
-            return false
-        end
+    if rand() <= exp(-parameters.s * delta_obs)
+        cache.last_observation[cache.indices_changed] .= cache.cached_observation[cache.indices_changed]
+        # Apply the changes in the cache
+        apply!(states, cache)
+        cache.total_observation += delta_obs
+        return true
     end
+
+    return false
 end
 
-function get_combined_shooting_and_bridging_perturbation_fn(args...; rng=Random.GLOBAL_RNG, kwargs...)
-    shoot_fn = get_guassian_shooting_perturbation_fn(args...; rng, kwargs...)
-    bridging_fn = get_guassian_bridging_perturbation_fn(args...; rng, kwargs...)
-    return states -> begin
-        fn = rand(rng, (shoot_fn, bridging_fn))
-        return fn(states)
-    end
+function shoot_or_bridge!(cache::GaussianMHTrajectoryCache{T, Q}, parameters::GaussianMHTrajectoryParameters, states::Q) where {T, Q}
+    fn = rand() < parameters.chance_shoot ? shoot! : bridge!
+    fn(cache, parameters, states)
 end
 
 
-function get_shooting_mh_alg(s, σ; rng=Random.GLOBAL_RNG, fraction_to_include=1.0)
-    @assert (fraction_to_include >= 0.0 && fraction_to_include <= 1.0) "The fraction of parameters to include should be between 0 and 1 inclusive."
-    fraction_to_exclude = 1.0-fraction_to_include
+function gaussian_trajectory_algorithm(s, σ; chance_to_shoot = nothing, params_changed_frac = nothing, max_width::Union{Nothing, Int} = nothing)
+    @_check_fraction_domain chance_to_shoot "Chance to shoot"
+    @_check_fraction_domain params_changed_frac "Fraction of changed parameters"
 
-    perturb_fn = get_guassian_shooting_perturbation_fn(σ; rng=rng, fraction_to_exclude = fraction_to_exclude)
-    apply_fn = get_apply_shooting_perturbation_fn()
-    undo_fn = get_undo_shooting_perturbation_fn()
-    acpt_fn = get_shooting_observable_acceptance_fn(s, apply_fn, undo_fn; rng=rng)
-    return MetropolisHastingsAlgorithm(perturb_fn, apply_fn, undo_fn, acpt_fn)
-end
-
-function get_shooting_and_bridging_mh_alg(s, σ; rng=Random.GLOBAL_RNG, fraction_to_include=1.0, max_width=nothing)
-    @assert (fraction_to_include >= 0.0 && fraction_to_include <= 1.0) "The fraction of parameters to include should be between 0 and 1 inclusive."
-    fraction_to_exclude = 1.0-fraction_to_include
-
-    perturb_fn = get_combined_shooting_and_bridging_perturbation_fn(σ; rng=rng, fraction_to_exclude=fraction_to_exclude, max_width=max_width)
-    apply_fn = get_apply_shooting_perturbation_fn()
-    undo_fn = get_undo_shooting_perturbation_fn()
-    acpt_fn = get_shooting_observable_acceptance_fn(s, apply_fn, undo_fn; rng=rng)
-    return MetropolisHastingsAlgorithm(perturb_fn, apply_fn, undo_fn, acpt_fn)
+    parameters = GaussianMHTrajectoryParameters(s, σ, params_changed_frac, chance_to_shoot, max_width)
+    return GaussianTrajectoryAlgorithm(parameters)
 end
