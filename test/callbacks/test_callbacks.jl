@@ -87,3 +87,33 @@ end
     # Last here is pre initialisation so should be different from end
     @test all(last(cb_cache[:states]) .== get_current_state(sol))
 end
+
+
+@testset "SetCallback" begin
+    problem, alg = setup()
+    cb_cache = Dict{Symbol,Any}()
+    cbs = (
+        InitialisationCallback(extract_state_fn(cb_cache, :initial_state)),
+        FinalisationCallback(extract_state_fn(cb_cache, :final_state)),
+        PreInnerLoopCallback(extract_state_fn(cb_cache, :pre_inner_loop_states, true)),
+        PostInnerLoopCallback(extract_state_fn(cb_cache, :post_inner_loop_states, true))
+    )
+    cb = CallbackSet(cbs...)
+    n_epochs = 10
+    sol = solve(problem, alg, 1:n_epochs; cb=cb)
+
+    @testset "Initialisation Callbacks" begin
+        @test all(cb_cache[:initial_state] .== TPS.get_initial_state(problem))
+    end
+    @testset "Finalisation Callbacks" begin
+        @test all(cb_cache[:final_state] .== get_current_state(sol))
+    end
+    
+    @testset "Inner loop Callbacks" begin
+        @test length(cb_cache[:pre_inner_loop_states]) == n_epochs
+        @test length(cb_cache[:post_inner_loop_states]) == n_epochs
+        for (pre_state, post_state) in zip(cb_cache[:pre_inner_loop_states][2:end], cb_cache[:post_inner_loop_states][1:end-1])
+            @test all(pre_state .== post_state)
+        end
+    end
+end

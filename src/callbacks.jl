@@ -17,7 +17,7 @@ Base.@kwdef struct SolveDependencies{A<:TPSProblem,B<:TPSSolution,C<:TPSAlgorith
 end
 
 
-run(cb::AbstractCallback, deps) = nothing
+run(::AbstractCallback, deps) = nothing
 
 # Assign traits to the location in which these are run
 @traitdef RunsAtInitialisation{X}
@@ -48,24 +48,24 @@ run(cb::FinalisationCallback, deps) = cb.fn(deps)
 run(cb::PreInnerLoopCallback, deps) = cb.fn(deps)
 run(cb::PostInnerLoopCallback, deps) = cb.fn(deps)
 
-struct CallbackSet{A<:Union{Nothing,NTuple},B<:Union{Nothing,NTuple},C<:Union{Nothing,NTuple},D<:Union{Nothing,NTuple}}
+struct CallbackSet{A<:Union{Nothing,Tuple},B<:Union{Nothing,Tuple},C<:Union{Nothing,Tuple},D<:Union{Nothing,Tuple}} <: AbstractCallback
     initialisation_callbacks::A
     finalisation_callbacks::B
     pre_inner_loop_callbacks::C
     post_inner_loop_callbacks::D
 end
-@traitimpl RunsAtInitialisation{X} < -runs_at_initialisation(X)
-runs_at_initialisation(cb) = false
-runs_at_initialisation(cb_set::CallbackSet) = !isnothing(cb_set.initialisation_callbacks)
-@traitimpl RunsAtFinalisation{X} < -runs_at_finalisation(X)
-runs_at_finalisation(cb) = false
-runs_at_finalisation(cb_set::CallbackSet) = !isnothing(cb_set.finalisation_callbacks)
-@traitimpl RunsPreInnerLoop{X} < -runs_pre_inner_loop(X)
-runs_pre_inner_loop(cb) = false
-runs_pre_inner_loop(cb_set::CallbackSet) = !isnothing(cb_set.pre_inner_loop_callbacks)
-@traitimpl RunsPostInnerLoop{X} < -runs_post_inner_loop(X)
-runs_post_inner_loop(cb) = false
-runs_post_inner_loop(cb_set::CallbackSet) = !isnothing(cb_set.post_inner_loop_callbacks)
+@traitimpl RunsAtInitialisation{X} <- runs_at_initialisation(X)
+runs_at_initialisation(::Any) = false
+runs_at_initialisation(::Type{CallbackSet{A,B,C,D}}) where {A,B,C,D} = (A !== Nothing)
+@traitimpl RunsAtFinalisation{X} <- runs_at_finalisation(X)
+runs_at_finalisation(::Any) = false
+runs_at_finalisation(::Type{CallbackSet{A,B,C,D}}) where {A,B,C,D} = (B !== Nothing)
+@traitimpl RunsPreInnerLoop{X} <- runs_pre_inner_loop(X)
+runs_pre_inner_loop(::Any) = false
+runs_pre_inner_loop(::Type{CallbackSet{A,B,C,D}}) where {A,B,C,D} = (C !== Nothing)
+@traitimpl RunsPostInnerLoop{X} <- runs_post_inner_loop(X)
+runs_post_inner_loop(::Any) = false
+runs_post_inner_loop(::Type{CallbackSet{A,B,C,D}}) where {A,B,C,D} = (D !== Nothing)
 
 function tuple_or_nothing_if_empty(t)
     if length(t) == 0
@@ -76,10 +76,10 @@ function tuple_or_nothing_if_empty(t)
 end
 
 function CallbackSet(callbacks...)
-    initialisation_callbacks = (cb for cb in callbacks if istrait(RunsAtInitialisation{typeof(cb)}))
-    finalisation_callbacks = (cb for cb in callbacks if istrait(RunsAtFinalisation{typeof(cb)}))
-    pre_inner_loop_callbacks = (cb for cb in callbacks if istrait(RunsPreInnerLoop{typeof(cb)}))
-    post_inner_loop_callbacks = (cb for cb in callbacks if istrait(RunsPrePostLoop{typeof(cb)}))
+    initialisation_callbacks = Tuple(cb for cb in callbacks if istrait(RunsAtInitialisation{typeof(cb)}))
+    finalisation_callbacks = Tuple(cb for cb in callbacks if istrait(RunsAtFinalisation{typeof(cb)}))
+    pre_inner_loop_callbacks = Tuple(cb for cb in callbacks if istrait(RunsPreInnerLoop{typeof(cb)}))
+    post_inner_loop_callbacks = Tuple(cb for cb in callbacks if istrait(RunsPostInnerLoop{typeof(cb)}))
     return CallbackSet(
         tuple_or_nothing_if_empty(initialisation_callbacks),
         tuple_or_nothing_if_empty(finalisation_callbacks),
@@ -92,51 +92,51 @@ run_cb_at_initialisation!(::Nothing, deps) = nothing
 run_cb_at_finalisation!(::Nothing, deps) = nothing
 run_cb_pre_inner_loop!(::Nothing, deps) = nothing
 run_cb_post_inner_loop!(::Nothing, deps) = nothing
-function run_cb_at_initialisation!(cb::AbstractCallback, deps::SolveDependencies)
+function run_cb_at_initialisation!(cb::AbstractCallback, deps)
     istrait(RunsAtInitialisation{typeof(cb)}) && run(cb, deps)
     nothing
 end
-function run_cb_at_finalisation!(cb::AbstractCallback, deps::SolveDependencies)
+function run_cb_at_finalisation!(cb::AbstractCallback, deps)
     istrait(RunsAtFinalisation{typeof(cb)}) && run(cb, deps)
     nothing
 end
-function run_cb_pre_inner_loop!(cb::AbstractCallback, deps::SolveDependencies)
+function run_cb_pre_inner_loop!(cb::AbstractCallback, deps)
     istrait(RunsPreInnerLoop{typeof(cb)}) && run(cb, deps)
     nothing
 end
-function run_cb_post_inner_loop!(cb::AbstractCallback, deps::SolveDependencies)
+function run_cb_post_inner_loop!(cb::AbstractCallback, deps)
     istrait(RunsPostInnerLoop{typeof(cb)}) && run(cb, deps)
     nothing
 end
 
-function run_cb_at_initialisation!(cb::CallbackSet, deps::SolveDependencies)
+function run_cb_at_initialisation!(cb::CallbackSet, deps)
     if istrait(RunsAtInitialisation{typeof(cb)})
         for init_cb in cb.initialisation_callbacks
-            run(cinit_cb, deps)
+            run(init_cb, deps)
         end
     end
     nothing
 end
-function run_cb_at_finalisation!(cb::CallbackSet, deps::SolveDependencies)
+function run_cb_at_finalisation!(cb::CallbackSet, deps)
     if istrait(RunsAtFinalisation{typeof(cb)})
         for init_cb in cb.finalisation_callbacks
-            run(cinit_cb, deps)
+            run(init_cb, deps)
         end
     end
     nothing
 end
-function run_cb_pre_inner_loop!(cb::CallbackSet, deps::SolveDependencies)
+function run_cb_pre_inner_loop!(cb::CallbackSet, deps)
     if istrait(RunsPreInnerLoop{typeof(cb)})
         for init_cb in cb.pre_inner_loop_callbacks
-            run(cinit_cb, deps)
+            run(init_cb, deps)
         end
     end
     nothing
 end
-function run_cb_post_inner_loop!(cb::CallbackSet, deps::SolveDependencies)
+function run_cb_post_inner_loop!(cb::CallbackSet, deps)
     if istrait(RunsPostInnerLoop{typeof(cb)})
         for init_cb in cb.post_inner_loop_callbacks
-            run(cinit_cb, deps)
+            run(init_cb, deps)
         end
     end
     nothing
