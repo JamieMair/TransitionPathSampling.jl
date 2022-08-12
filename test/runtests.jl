@@ -12,3 +12,7 @@ end
 @safetestset "Simulated Annealing" begin
     include("metropolis/test_sa.jl")
 end
+
+@safetestset "Callbacks" begin
+    include("callbacks/test_callbacks.jl")
+end

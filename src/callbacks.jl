@@ -17,7 +17,7 @@ Base.@kwdef struct SolveDependencies{A<:TPSProblem,B<:TPSSolution,C<:TPSAlgorith
 end
 
 
-run(cb::AbstractCallback, deps::SolveDependencies) = nothing
+run(cb::AbstractCallback, deps) = nothing
 
 # Assign traits to the location in which these are run
 @traitdef RunsAtInitialisation{X}
@@ -54,16 +54,16 @@ struct CallbackSet{A<:Union{Nothing,NTuple},B<:Union{Nothing,NTuple},C<:Union{No
     pre_inner_loop_callbacks::C
     post_inner_loop_callbacks::D
 end
-@traitimpl RunsAtInitialisation{X} <- runs_at_initialisation(X)
+@traitimpl RunsAtInitialisation{X} < -runs_at_initialisation(X)
 runs_at_initialisation(cb) = false
 runs_at_initialisation(cb_set::CallbackSet) = !isnothing(cb_set.initialisation_callbacks)
-@traitimpl RunsAtFinalisation{X} <- runs_at_finalisation(X)
+@traitimpl RunsAtFinalisation{X} < -runs_at_finalisation(X)
 runs_at_finalisation(cb) = false
 runs_at_finalisation(cb_set::CallbackSet) = !isnothing(cb_set.finalisation_callbacks)
-@traitimpl RunsPreInnerLoop{X} <- runs_pre_inner_loop(X)
+@traitimpl RunsPreInnerLoop{X} < -runs_pre_inner_loop(X)
 runs_pre_inner_loop(cb) = false
 runs_pre_inner_loop(cb_set::CallbackSet) = !isnothing(cb_set.pre_inner_loop_callbacks)
-@traitimpl RunsPostInnerLoop{X} <- runs_post_inner_loop(X)
+@traitimpl RunsPostInnerLoop{X} < -runs_post_inner_loop(X)
 runs_post_inner_loop(cb) = false
 runs_post_inner_loop(cb_set::CallbackSet) = !isnothing(cb_set.post_inner_loop_callbacks)
 
@@ -88,25 +88,29 @@ function CallbackSet(callbacks...)
     )
 end
 
+run_cb_at_initialisation!(::Nothing, deps) = nothing
+run_cb_at_finalisation!(::Nothing, deps) = nothing
+run_cb_pre_inner_loop!(::Nothing, deps) = nothing
+run_cb_post_inner_loop!(::Nothing, deps) = nothing
 function run_cb_at_initialisation!(cb::AbstractCallback, deps::SolveDependencies)
-    istrait(RunsAtInitialisation{cb}) && run(cb, deps)
+    istrait(RunsAtInitialisation{typeof(cb)}) && run(cb, deps)
     nothing
 end
 function run_cb_at_finalisation!(cb::AbstractCallback, deps::SolveDependencies)
-    istrait(RunsAtFinalisation{cb}) && run(cb, deps)
+    istrait(RunsAtFinalisation{typeof(cb)}) && run(cb, deps)
     nothing
 end
 function run_cb_pre_inner_loop!(cb::AbstractCallback, deps::SolveDependencies)
-    istrait(RunsPreInnerLoop{cb}) && run(cb, deps)
+    istrait(RunsPreInnerLoop{typeof(cb)}) && run(cb, deps)
     nothing
 end
 function run_cb_post_inner_loop!(cb::AbstractCallback, deps::SolveDependencies)
-    istrait(RunsPostInnerLoop{cb}) && run(cb, deps)
+    istrait(RunsPostInnerLoop{typeof(cb)}) && run(cb, deps)
     nothing
 end
 
 function run_cb_at_initialisation!(cb::CallbackSet, deps::SolveDependencies)
-    if istrait(RunsAtInitialisation{cb})
+    if istrait(RunsAtInitialisation{typeof(cb)})
         for init_cb in cb.initialisation_callbacks
             run(cinit_cb, deps)
         end
@@ -114,7 +118,7 @@ function run_cb_at_initialisation!(cb::CallbackSet, deps::SolveDependencies)
     nothing
 end
 function run_cb_at_finalisation!(cb::CallbackSet, deps::SolveDependencies)
-    if istrait(RunsAtFinalisation{cb})
+    if istrait(RunsAtFinalisation{typeof(cb)})
         for init_cb in cb.finalisation_callbacks
             run(cinit_cb, deps)
         end
@@ -122,7 +126,7 @@ function run_cb_at_finalisation!(cb::CallbackSet, deps::SolveDependencies)
     nothing
 end
 function run_cb_pre_inner_loop!(cb::CallbackSet, deps::SolveDependencies)
-    if istrait(RunsPreInnerLoop{cb})
+    if istrait(RunsPreInnerLoop{typeof(cb)})
         for init_cb in cb.pre_inner_loop_callbacks
             run(cinit_cb, deps)
         end
@@ -130,7 +134,7 @@ function run_cb_pre_inner_loop!(cb::CallbackSet, deps::SolveDependencies)
     nothing
 end
 function run_cb_post_inner_loop!(cb::CallbackSet, deps::SolveDependencies)
-    if istrait(RunsPostInnerLoop{cb})
+    if istrait(RunsPostInnerLoop{typeof(cb)})
         for init_cb in cb.post_inner_loop_callbacks
             run(cinit_cb, deps)
         end
@@ -138,6 +142,6 @@ function run_cb_post_inner_loop!(cb::CallbackSet, deps::SolveDependencies)
     nothing
 end
 
-export InitialisationCallback, FinalisationCallback, PreInnerLoopCallback, PostInnerLoopCallback, CallbackSet
+export InitialisationCallback, FinalisationCallback, PreInnerLoopCallback, PostInnerLoopCallback, CallbackSet, SolveDependencies
 
 end
