@@ -158,18 +158,12 @@ end
 function _bridge_indices(T, max_size)
     T==3 && return 1,3 # Special case with no choice
 
-    fixed_index = rand(1:T)    
-    
-    if fixed_index < 3
-        forwards = true
-    elseif fixed_index > T-2
-        forwards = false
-    else
-        forwards = rand((true, false))
-    end
+    fixed_index = rand(2:T-1)    
+    forwards = rand() < 0.5
     direction = forwards ? 1 : -1
-    second_index = max(1, min(T, fixed_index + direction*(max_size+1)))
-    return min(fixed_index, second_index), max(fixed_index, second_index)
+    first_index = fixed_index - direction
+    second_index = max(1, min(T, first_index + direction * (max_size + 1)))
+    return min(first_index, second_index), max(first_index, second_index)
 end
 
 function bridge!(cache::GaussianMHTrajectoryCache{T, Q}, parameters::GaussianMHTrajectoryParameters, states::Q) where {T, Q}
