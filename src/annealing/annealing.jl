@@ -34,8 +34,17 @@ struct LinearDecayAnnealedAlgorithm{T, Q} <: SingleParameterAnnealedAlgorithm wh
     parameter_symbol::Symbol
 end
 LinearDecayAnnealedAlgorithm(algorithm, initial_value, target_value, steps, parameter_symbol) = LinearDecayAnnealedAlgorithm(algorithm, LinRange(initial_value, target_value, steps), parameter_symbol)
+struct SteppedAnnealedAlgorithm{T, Q} <: SingleParameterAnnealedAlgorithm where {T<:TPSAlgorithm, Q<:LinRange}
+    algorithm::T
+    range::Q
+    step_width::Integer
+    parameter_symbol::Symbol
+end
+SteppedAnnealedAlgorithm(algorithm, initial_value, target_value, steps, step_width, parameter_symbol) = SteppedAnnealedAlgorithm(algorithm, LinRange(initial_value, target_value, steps), step_width, parameter_symbol)
 get_main_algorithm(alg::LinearDecayAnnealedAlgorithm) = alg.algorithm
+get_main_algorithm(alg::SteppedAnnealedAlgorithm) = alg.algorithm
 get_symbol(alg::LinearDecayAnnealedAlgorithm) = alg.parameter_symbol
+get_symbol(alg::SteppedAnnealedAlgorithm) = alg.parameter_symbol
 
 struct ClippedExponentialDecayAnnealedAlgorithm{T} <: SingleParameterAnnealedAlgorithm where {T<:TPSAlgorithm}
     algorithm::ExponentialDecayAnnealedAlgorithm{T}
@@ -48,6 +57,13 @@ get_symbol(alg::ExponentialDecayAnnealedAlgorithm) = alg.parameter_symbol
 
 
 calculate_parameter_value(alg::LinearDecayAnnealedAlgorithm, epoch) = epoch > length(alg.range) ? alg.range[end] : alg.range[epoch]
+function calculate_parameter_value(alg::SteppedAnnealedAlgorithm, epoch)
+    if epoch > length(alg.range)
+        return alg.range[end]
+    end
+
+    return alg.range[epoch - (epoch - 1) % alg.step_width]
+end
 function calculate_parameter_value(alg::ExponentialDecayAnnealedAlgorithm, epoch)
     param = alg.parameter_starting_value * exp(epoch/alg.epoch_width)
     return param
@@ -86,5 +102,5 @@ function create_annealed_algorithm(algorithm, starting_parameter_value, epoch_wi
 end
 
 
-export ExponentialDecayAnnealedAlgorithm, ClippedExponentialDecayAnnealedAlgorithm, LinearDecayAnnealedAlgorithm, create_annealed_algorithm
+export ExponentialDecayAnnealedAlgorithm, ClippedExponentialDecayAnnealedAlgorithm, LinearDecayAnnealedAlgorithm, SteppedAnnealedAlgorithm, create_annealed_algorithm
 end
