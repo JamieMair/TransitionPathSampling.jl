@@ -16,3 +16,7 @@ end
 @safetestset "Callbacks" begin
     include("callbacks/test_callbacks.jl")
 end
+
+@safetestset "Annealing" begin
+    include("annealing/annealing.jl")
+end
