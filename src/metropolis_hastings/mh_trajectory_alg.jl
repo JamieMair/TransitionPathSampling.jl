@@ -70,10 +70,9 @@ function TPS.step!(cache::GaussianMHTrajectoryCache, solution::TPSSolution, alg:
 end
 
 function mask_cache!(cache::GaussianMHTrajectoryCache{T, Q}, states::Q) where {T, Q}
-    state_cache = cache.state_cache
     if cache.use_mask
         for i in cache.indices_changed
-            state_cache[i][cache.exclude_parameter_mask] .= states[i][cache.exclude_parameter_mask]
+            cache.state_cache[i][cache.exclude_parameter_mask] .= states[i][cache.exclude_parameter_mask]
         end
     end
     nothing
