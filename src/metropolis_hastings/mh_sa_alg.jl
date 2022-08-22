@@ -63,6 +63,9 @@ function mask_cache!(cache::GaussianSACache{Q}, state::Q) where {Q}
 end
 
 function perturb!(cache::GaussianSACache{Q}, state::Q, σ) where {Q}
+    if cache.use_mask
+        Random.shuffle!(cache.exclude_parameter_mask)
+    end
     randn!(cache.state)
     cache.state .= state .+ cache.state .* σ
     mask_cache!(cache, state)
