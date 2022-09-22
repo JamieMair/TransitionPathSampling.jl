@@ -71,7 +71,7 @@ end
             if i in range
                 @test all(temp_cache.state_cache[i] .!= cache.state_cache[i])
             else
-                @test all(temp_cache.state_cache[i] .== cache.state_cache[i])
+                @test all(isapprox.(temp_cache.state_cache[i], cache.state_cache[i]))
             end
         end
         nothing
@@ -101,7 +101,7 @@ end
                 if i in shoot_indices
                     @test all(temp_cache.state_cache[i] .!= cache.state_cache[i])
                 else
-                    @test all(temp_cache.state_cache[i] .== cache.state_cache[i])
+                    @test all(isapprox.(temp_cache.state_cache[i], cache.state_cache[i]))
                 end
             end
         end
