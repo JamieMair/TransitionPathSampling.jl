@@ -63,6 +63,9 @@ end
     alg = TransitionPathSampling.MetropolisHastings.gaussian_trajectory_algorithm(s, σ);
     states = deepcopy(TransitionPathSampling.get_initial_state(problem))
     cache = TransitionPathSampling.generate_cache(alg, problem)
+    for s in cache.state_cache # Reset the state cache
+        fill!(s, zero(eltype(s)))
+    end
     function test_bridge(start_index, end_index)
         temp_cache = deepcopy(cache)
         range = (start_index+1):(end_index-1)
@@ -92,7 +95,9 @@ end
         alg = TransitionPathSampling.MetropolisHastings.gaussian_trajectory_algorithm(s, σ);
         states = deepcopy(TransitionPathSampling.get_initial_state(problem))
         cache = TransitionPathSampling.generate_cache(alg, problem)
-
+        for s in cache.state_cache # Reset the state cache
+            fill!(s, zero(eltype(s)))
+        end
         function test_shoot(start_index, forwards)
             temp_cache = deepcopy(cache)
             TransitionPathSampling.MetropolisHastings.shoot!(temp_cache, states, start_index, σ, forwards)
@@ -126,6 +131,9 @@ end
     function test_alg_masking(alg)
         states = deepcopy(TransitionPathSampling.get_initial_state(problem))
         cache = TransitionPathSampling.generate_cache(alg, problem)
+        for s in cache.state_cache # Reset the state cache
+            fill!(s, zero(eltype(s)))
+        end
         changed_indices = 3:6
         # Mutate the variables inside
         for i in changed_indices
