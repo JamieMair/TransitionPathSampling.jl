@@ -65,9 +65,9 @@ jobs:
       - run: |
           julia --project=docs -e '
             using Documenter: DocMeta, doctest
-            using TPS
-            DocMeta.setdocmeta!(TPS, :DocTestSetup, :(using TPS); recursive=true)
-            doctest(TPS)'
+            using TransitionPathSampling
+            DocMeta.setdocmeta!(TransitionPathSampling, :DocTestSetup, :(using TransitionPathSampling); recursive=true)
+            doctest(TransitionPathSampling)'
       - run: julia --project=docs docs/make.jl
         env:
           JULIA_PKG_SERVER: ""

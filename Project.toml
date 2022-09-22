@@ -1,13 +1,20 @@
-name = "TPS"
+name = "TransitionPathSampling"
 uuid = "90a4db8d-a042-44ed-af16-fb847fa05318"
 authors = ["Jamie Mair <jamie.mair@noreply.github.com> and contributors"]
-version = "0.1.0"
+version = "0.2"
+
+[deps]
+Lazy = "50d2b5c4-7a5e-59d5-8109-a42b560f39c0"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+SimpleTraits = "699a6c99-e7fa-54fc-8d76-47d257e15c1d"
+Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 
 [compat]
 julia = "1"
 
 [extras]
+SafeTestsets = "1bc83da4-3b8d-516f-aca4-4fe02f6d838f"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [targets]
-test = ["Test"]
+test = ["Test", "SafeTestsets"]

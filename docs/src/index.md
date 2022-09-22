@@ -1,14 +1,14 @@
 ```@meta
-CurrentModule = TPS
+CurrentModule = TransitionPathSampling
 ```
 
-# TPS
+# TransitionPathSampling.jl
 
-Documentation for [TPS](https://github.com/JamieMair/TPS.jl). This is a module written by [Jamie Mair](https://github.com/JamieMair).
+Documentation for [TransitionPathSampling](https://github.com/JamieMair/TransitionPathSampling.jl). This is a module written by [Jamie Mair](https://github.com/JamieMair).
 
 ```@index
 ```
 
 ```@autodocs
-Modules = [TPS]
+Modules = [TransitionPathSampling]
 ```
