@@ -1,5 +1,5 @@
 module Callbacks
-using ..TPS
+using ..TransitionPathSampling
 using Base
 using SimpleTraits
 

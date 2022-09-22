@@ -1,5 +1,4 @@
-module TPS
-
+module TransitionPathSampling
 
 # Interface for TPSProblem
 abstract type TPSProblem end

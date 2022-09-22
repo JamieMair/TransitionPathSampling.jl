@@ -27,16 +27,16 @@ struct GaussianTrajectoryAlgorithm <: AbstractMetropolisHastingsAlg
     parameters::GaussianMHTrajectoryParameters
 end
 
-function TPS.generate_cache(alg::GaussianTrajectoryAlgorithm, problem::TPSProblem)
-    initial_state = TPS.get_initial_state(problem)
+function TransitionPathSampling.generate_cache(alg::GaussianTrajectoryAlgorithm, problem::TPSProblem)
+    initial_state = TransitionPathSampling.get_initial_state(problem)
     state_cache = [similar(s) for s in initial_state]
     num_models = length(state_cache)
     num_parameters = length(first(state_cache))
     num_params_to_change = !isnothing(alg.parameters.fraction_to_include) ? max(1, min(num_parameters, Int(round(alg.parameters.fraction_to_include * num_parameters)))) : num_parameters
     use_mask = (num_parameters != num_params_to_change)
     exclude_parameter_mask = BitArray(i > num_params_to_change for i in 1:num_parameters)
-    observable = TPS.get_observable(problem)
-    observations = TPS.observe(observable, initial_state)
+    observable = TransitionPathSampling.get_observable(problem)
+    observations = TransitionPathSampling.observe(observable, initial_state)
     @assert typeof(observations)<:AbstractArray "The observation function does not return a vector of observations for each state in the trajectory."
     total_observation = sum(observations)
     indices_changed = 1:num_models
@@ -55,14 +55,14 @@ function TPS.generate_cache(alg::GaussianTrajectoryAlgorithm, problem::TPSProble
     )
 end
 
-function TPS.step!(cache::GaussianMHTrajectoryCache, solution::TPSSolution, alg::GaussianTrajectoryAlgorithm, iter, args...; kwargs...) 
-    states = TPS.get_current_state(solution)
+function TransitionPathSampling.step!(cache::GaussianMHTrajectoryCache, solution::TPSSolution, alg::GaussianTrajectoryAlgorithm, iter, args...; kwargs...) 
+    states = TransitionPathSampling.get_current_state(solution)
     fn! = isnothing(alg.parameters.chance_shoot) ? shoot! : shoot_or_bridge!
     fn!(cache, alg.parameters, states)
     accept = acceptance!(cache, states, alg.parameters)
     cache.last_accepted = accept
     if accept
-        TPS.set_current_state!(solution, states)
+        TransitionPathSampling.set_current_state!(solution, states)
     end
     push!(solution, cache.total_observation)
     # ToDo specialise on the type of solution to record more details
@@ -181,7 +181,7 @@ function apply!(states::Q, cache::GaussianMHTrajectoryCache{T, Q}) where {T, Q}
 end
 
 function acceptance!(cache::GaussianMHTrajectoryCache{T, Q}, states::Q, parameters::GaussianMHTrajectoryParameters) where {T, Q}
-    TPS.observe!(cache.cached_observation, cache.observable, cache.state_cache, cache.indices_changed)
+    TransitionPathSampling.observe!(cache.cached_observation, cache.observable, cache.state_cache, cache.indices_changed)
     delta_obs = zero(eltype(cache.cached_observation))
     for i in cache.indices_changed
         delta_obs += cache.cached_observation[i] - cache.last_observation[i]

@@ -1,5 +1,5 @@
 module SimulatedAnnealing
-using ..TPS
+using ..TransitionPathSampling
 
 
 abstract type AbstractSAProblem <: TPSProblem end
@@ -7,13 +7,13 @@ struct SAProblem{T, S<:AbstractObservable} <: AbstractSAProblem
     observable::S
     state::T
 end
-function TPS.get_initial_state(problem::SAProblem)
+function TransitionPathSampling.get_initial_state(problem::SAProblem)
     return problem.state
 end
-function TPS.get_observable(problem::SAProblem)
+function TransitionPathSampling.get_observable(problem::SAProblem)
     return problem.observable
 end
-function TPS.init_solution(alg, problem::T, args...; kwargs...) where {T<:AbstractSAProblem}
+function TransitionPathSampling.init_solution(alg, problem::T, args...; kwargs...) where {T<:AbstractSAProblem}
     # By default, have a simple solution
     # TODO: Add some configuration options here
     sol = SimpleSolution(problem, alg)

@@ -109,7 +109,7 @@ function Base.iterate(iter::AutomaticConvergenceIterator, state::AutomaticConver
     return (i+1, AutomaticConvergenceIteratorState(i + 1, current_observable))
 end
 
-function TPS.get_iterator(options::AutomaticConvergenceOptions, args...; solution, kwargs...)
+function TransitionPathSampling.get_iterator(options::AutomaticConvergenceOptions, args...; solution, kwargs...)
     observable_type = get_observable_type(solution)
     buffer = create_automatic_buffer(observable_type, get_buffer_size(options))
     sol_wrapper = ConvergenceSolutionWrapper(solution, buffer)
@@ -117,6 +117,6 @@ function TPS.get_iterator(options::AutomaticConvergenceOptions, args...; solutio
     return iterator
 end
 
-TPS.get_epoch_from_state(state::AutomaticConvergenceIteratorState) = state.epoch
+TransitionPathSampling.get_epoch_from_state(state::AutomaticConvergenceIteratorState) = state.epoch
 
 export AutomaticConvergenceOptions

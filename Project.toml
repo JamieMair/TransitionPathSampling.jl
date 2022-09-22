@@ -1,4 +1,4 @@
-name = "TPS"
+name = "TransitionPathSampling"
 uuid = "90a4db8d-a042-44ed-af16-fb847fa05318"
 authors = ["Jamie Mair <jamie.mair@noreply.github.com> and contributors"]
 version = "0.1.3"

@@ -1,5 +1,5 @@
 module Convergence
-using ..TPS
+using ..TransitionPathSampling
 
 include("automatic_convergence.jl")
 end

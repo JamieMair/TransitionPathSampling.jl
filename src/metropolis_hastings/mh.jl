@@ -1,5 +1,5 @@
 module MetropolisHastings
-using ..TPS
+using ..TransitionPathSampling
 
 
 abstract type AbstractMetropolisHastingsAlg <: TPSAlgorithm end

@@ -1,5 +1,5 @@
-using TPS
-using TPS.Convergence
+using TransitionPathSampling
+using TransitionPathSampling.Convergence
 using Test
 using Statistics
 using SafeTestsets
@@ -9,7 +9,7 @@ using SafeTestsets
     num_losses = 32
     buffer_size = num_losses ÷ 4
     losses = LinRange(1.0, 10.0, num_losses)
-    buffer = TPS.Convergence.create_automatic_buffer(eltype(losses), buffer_size)
+    buffer = TransitionPathSampling.Convergence.create_automatic_buffer(eltype(losses), buffer_size)
 
     for i=1:length(losses)
         push!(buffer, losses[i])

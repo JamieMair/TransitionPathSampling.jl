@@ -1,7 +1,7 @@
-using TPS
-using TPS.Callbacks
-using TPS.MetropolisHastings
-using TPS.SimulatedAnnealing
+using TransitionPathSampling
+using TransitionPathSampling.Callbacks
+using TransitionPathSampling.MetropolisHastings
+using TransitionPathSampling.SimulatedAnnealing
 using Test
 using SafeTestsets
 
@@ -12,7 +12,7 @@ end
 
 function test_problem(d)
     state = zeros(d)
-    obs = TPS.SimpleObservable(loss_fn)
+    obs = TransitionPathSampling.SimpleObservable(loss_fn)
     return SAProblem(obs, state)
 end
 
@@ -22,7 +22,7 @@ function setup()
     σ = 100.0
     d = 10
     problem = test_problem(d)
-    alg = TPS.MetropolisHastings.gaussian_sa_algorithm(s, σ)
+    alg = TransitionPathSampling.MetropolisHastings.gaussian_sa_algorithm(s, σ)
     return problem, alg
 end
 
@@ -50,7 +50,7 @@ end
     cb = InitialisationCallback(extract_state_fn(cb_cache, :initial_state))
     solve(problem, alg, 1:10; cb=cb)
 
-    @test all(cb_cache[:initial_state] .== TPS.get_initial_state(problem))
+    @test all(cb_cache[:initial_state] .== TransitionPathSampling.get_initial_state(problem))
 end
 
 @testset "Finalisation Callback" begin
@@ -70,7 +70,7 @@ end
     sol = solve(problem, alg, 1:n_epochs; cb=cb)
 
     @test length(cb_cache[:states]) == n_epochs
-    @test all(first(cb_cache[:states]) .== TPS.get_initial_state(problem))
+    @test all(first(cb_cache[:states]) .== TransitionPathSampling.get_initial_state(problem))
     # Last here is pre initialisation so should be different from end
     @test all(last(cb_cache[:states]) .!= get_current_state(sol))
 end
@@ -83,7 +83,7 @@ end
     sol = solve(problem, alg, 1:n_epochs; cb=cb)
 
     @test length(cb_cache[:states]) == n_epochs
-    @test all(first(cb_cache[:states]) .!= TPS.get_initial_state(problem))
+    @test all(first(cb_cache[:states]) .!= TransitionPathSampling.get_initial_state(problem))
     # Last here is pre initialisation so should be different from end
     @test all(last(cb_cache[:states]) .== get_current_state(sol))
 end
@@ -103,7 +103,7 @@ end
     sol = solve(problem, alg, 1:n_epochs; cb=cb)
 
     @testset "Initialisation Callbacks" begin
-        @test all(cb_cache[:initial_state] .== TPS.get_initial_state(problem))
+        @test all(cb_cache[:initial_state] .== TransitionPathSampling.get_initial_state(problem))
     end
     @testset "Finalisation Callbacks" begin
         @test all(cb_cache[:final_state] .== get_current_state(sol))

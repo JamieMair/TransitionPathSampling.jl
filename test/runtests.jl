@@ -1,4 +1,4 @@
-using TPS
+using TransitionPathSampling
 using SafeTestsets
 
 @safetestset "Convergence" begin
