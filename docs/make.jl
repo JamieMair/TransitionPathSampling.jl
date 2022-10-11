@@ -18,6 +18,7 @@ makedocs(;
         "Manual" => Any[
             "Guide" => "manual/guide.md",
             "manual/examples.md",
+            "manual/dynamics.md"
         ]
     ],
 )

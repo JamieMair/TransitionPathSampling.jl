@@ -20,15 +20,12 @@ Some examples of packages using Documenter can be found on the [Examples](@ref) 
 
 See the [Index](@ref main-index) for the complete list of documented functions and types.
 
-## Manual Outline
+<!-- ## Manual Outline
 
 ```@contents
-Pages = [
-    "manual/guide.md",
-    "manual/examples.md"
-]
+Pages = ["manual/guide.md", "manual/examples.md"]
 Depth = 1
-```
+``` -->
 
 ## Library Outline
 
