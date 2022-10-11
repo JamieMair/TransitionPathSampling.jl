@@ -9,7 +9,8 @@
             "command": "julia --project make.jl",
             "options": {
                 "cwd": "${workspaceFolder}/docs"
-            }
+            },
+            "problemMatcher": []
         }
     ]
 }
