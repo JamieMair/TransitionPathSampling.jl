@@ -35,11 +35,11 @@ chance_to_shoot = 2 / trajectory_length # Probability to shoot (vs probability t
 max_width = 1 # Only change one state at a time
 algorithm = gaussian_trajectory_algorithm(s, sigma; chance_to_shoot, max_width)
 ```
-This algorithm will perform shooting (i.e. running the dynamics forwards or backwards in time from a fixed point in the trajectory, regenerating part of the trajectory) with a probability of `\frac{2}{8}`, and only edit a single state on each update. We also provide a way of producing Brownian bridges between two fixed points so that states in the middle of the trajectory can be efficiently updated as well. More information on the exact dynamics can be found in [this](https://arxiv.org/abs/2209.11116) paper.
+This algorithm will perform shooting (i.e. running the dynamics forwards or backwards in time from a fixed point in the trajectory, regenerating part of the trajectory) with a probability of ``\frac{2}{8}``, and only edit a single state on each update. We also provide a way of producing Brownian bridges between two fixed points so that states in the middle of the trajectory can be efficiently updated as well. More information on the exact dynamics can be found in [this](https://arxiv.org/abs/2209.11116) paper.
 
 Now we have everything we need to run the dynamics:
 ```julia
-epochs = 100
+epochs = 100 # Number of samples to make
 solution = solve(problem, algorithm, epochs)
 ```
 We can access the final state of the solution:
