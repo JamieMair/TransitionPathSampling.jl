@@ -1,6 +1,5 @@
 # TransitionPathSampling.jl
 
-[![Stable](https://img.shields.io/badge/docs-stable-blue.svg)](https://JamieMair.github.io/TransitionPathSampling.jl/stable)
 [![Dev](https://img.shields.io/badge/docs-dev-blue.svg)](https://JamieMair.github.io/TransitionPathSampling.jl/dev)
 [![Build Status](https://github.com/JamieMair/TransitionPathSampling.jl/workflows/CI/badge.svg)](https://github.com/JamieMair/TransitionPathSampling.jl/actions)
 [![Coverage](https://codecov.io/gh/JamieMair/TransitionPathSampling.jl/branch/main/graph/badge.svg?token=f4WisaafXY)](https://codecov.io/gh/JamieMair/TransitionPathSampling.jl)
