@@ -22,5 +22,6 @@ function set_current_state!(solution::SimpleSolution{T, S}, state::S) where {T, 
     return nothing
 end
 get_observable_type(solution::SimpleSolution{T, S}) where {T, S} = T
+get_observations(solution::SimpleSolution) = solution.observations
 
-export get_current_state, set_current_state!, SimpleSolution, get_problem, get_observable_type
+export get_current_state, set_current_state!, SimpleSolution, get_problem, get_observable_type, get_observations
