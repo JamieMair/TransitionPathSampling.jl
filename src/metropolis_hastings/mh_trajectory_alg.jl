@@ -55,17 +55,9 @@ function TransitionPathSampling.generate_cache(alg::GaussianTrajectoryAlgorithm,
     )
 end
 
-function TransitionPathSampling.step!(cache::GaussianMHTrajectoryCache, solution::TPSSolution, alg::GaussianTrajectoryAlgorithm, iter, args...; kwargs...) 
-    states = TransitionPathSampling.get_current_state(solution)
+function perturb!(cache::GaussianMHTrajectoryCache, alg::GaussianTrajectoryAlgorithm, states)
     fn! = isnothing(alg.parameters.chance_shoot) ? shoot! : shoot_or_bridge!
     fn!(cache, alg.parameters, states)
-    accept = acceptance!(cache, states, alg.parameters)
-    cache.last_accepted = accept
-    if accept
-        TransitionPathSampling.set_current_state!(solution, states)
-    end
-    push!(solution, cache.total_observation)
-    # ToDo specialise on the type of solution to record more details
     nothing
 end
 
@@ -180,7 +172,15 @@ function apply!(states::Q, cache::GaussianMHTrajectoryCache{T, Q}) where {T, Q}
     nothing
 end
 
-function acceptance!(cache::GaussianMHTrajectoryCache{T, Q}, states::Q, parameters::GaussianMHTrajectoryParameters) where {T, Q}
+function proposed_changed_state(cache::GaussianMHTrajectoryCache) 
+    return view(cache.state_cache, cache.indices_changed)
+end
+function original_changed_state(cache::GaussianMHTrajectoryCache, states) 
+    return view(states, cache.indices_changed)
+end
+get_last_observation!(cache::GaussianMHTrajectoryCache) = cache.total_observation
+function acceptance!(cache::GaussianMHTrajectoryCache{T, Q}, states::Q, alg::GaussianTrajectoryAlgorithm) where {T, Q}
+    parameters = alg.parameters
     TransitionPathSampling.observe!(cache.cached_observation, cache.observable, cache.state_cache, cache.indices_changed)
     delta_obs = zero(eltype(cache.cached_observation))
     for i in cache.indices_changed

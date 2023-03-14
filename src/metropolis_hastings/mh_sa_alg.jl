@@ -42,19 +42,6 @@ function TransitionPathSampling.generate_cache(alg::GaussianSAAlgorithm, problem
     )
 end
 
-function TransitionPathSampling.step!(cache::GaussianSACache, solution::TPSSolution, alg::GaussianSAAlgorithm, iter, args...; kwargs...) 
-    state = TransitionPathSampling.get_current_state(solution)
-    perturb!(cache, state, alg.parameters.σ)
-    accept = acceptance!(cache, state, alg.parameters)
-    cache.last_accepted = accept
-    if accept
-        TransitionPathSampling.set_current_state!(solution, state)
-    end
-    push!(solution, cache.last_observation)
-    # ToDo specialise on the type of solution to record more details
-    nothing
-end
-
 function mask_cache!(cache::GaussianSACache{Q}, state::Q) where {Q}
     if cache.use_mask
         cache.state[cache.exclude_parameter_mask] .= state[cache.exclude_parameter_mask]
@@ -62,21 +49,30 @@ function mask_cache!(cache::GaussianSACache{Q}, state::Q) where {Q}
     nothing
 end
 
-function perturb!(cache::GaussianSACache{Q}, state::Q, σ) where {Q}
+function perturb!(cache::GaussianSACache, alg::GaussianSAAlgorithm, state)
     if cache.use_mask
         Random.shuffle!(cache.exclude_parameter_mask)
     end
+    σ = alg.parameters.σ
     randn!(cache.state)
     cache.state .= state .+ cache.state .* σ
     mask_cache!(cache, state)
+    nothing
 end
 
 function apply!(state::Q, cache::GaussianSACache{Q}) where {Q}
     state .= cache.state
 end
-
-function acceptance!(cache::GaussianSACache{Q}, state::Q, parameters::GaussianSAParameters) where {Q}
-    new_observation = TransitionPathSampling.observe(cache.observable, cache.state)
+function proposed_changed_state(cache::GaussianSACache) 
+    return cache.state
+end
+function original_changed_state(cache::GaussianSACache, states) 
+    return states
+end
+get_last_observation!(cache::GaussianSACache) = cache.last_observation
+function acceptance!(cache::GaussianSACache{Q}, state::Q, alg::GaussianSAAlgorithm) where {Q}
+    parameters = alg.parameters
+    new_observation = TransitionPathSampling.observe(cache.observable, proposed_changed_state(cache))
     delta_obs = new_observation - cache.last_observation
     if rand() <= exp(-parameters.s * delta_obs)
         cache.last_observation = new_observation

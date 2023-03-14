@@ -20,6 +20,27 @@ function get_parameters(alg::AbstractMetropolisHastingsAlg)
     nothing
 end
 
+function get_observable(cache::AbstractMetropolisHastingsCache)
+    if hasfield(typeof(cache), :observable)
+        return getfield(cache, :observable)
+    else
+        error("Cache $(typeof(cache)) does not have the observable field.")
+    end
+end
+
+function set_last_acceptance!(cache::AbstractMetropolisHastingsCache, acceptance)
+    if hasfield(typeof(cache), :last_accepted)
+        setfield!(cache, :last_accepted, acceptance)
+        nothing
+    else
+        error("Cache $(typeof(cache)) does not have the last_accepted field.")
+    end
+end
+
+proposed_changed_state(::AbstractMetropolisHastingsCache) = error("unimplemented")
+original_changed_state(::AbstractMetropolisHastingsCache, state) = error("unimplemented")
+get_last_observation!(cache::AbstractMetropolisHastingsCache) = error("unimplemented")
+
 macro _check_fraction_domain(val, parameter_name)
     quote
         if !isnothing($(esc(val))) && ($(esc(val)) < 0.0 && $(esc(val)) > 1.0)
@@ -30,6 +51,20 @@ end
 
 include("mh_sa_alg.jl")
 include("mh_trajectory_alg.jl")
+
+
+function TransitionPathSampling.step!(cache::AbstractMetropolisHastingsCache, solution::TPSSolution, alg::AbstractMetropolisHastingsAlg, iter, args...; kwargs...) 
+    state = TransitionPathSampling.get_current_state(solution)
+    perturb!(cache, alg, state)
+    accept = acceptance!(cache, state, alg)
+    set_last_acceptance!(cache, accept)
+    if accept
+        TransitionPathSampling.set_current_state!(solution, state)
+    end
+    push!(solution, get_last_observation!(cache))
+    # ToDo specialise on the type of solution to record more details
+    nothing
+end
 
 export gaussian_sa_algorithm, gaussian_trajectory_algorithm, last_accepted 
 
