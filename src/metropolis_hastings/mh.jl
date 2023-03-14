@@ -5,6 +5,8 @@ using ..TransitionPathSampling
 abstract type AbstractMetropolisHastingsAlg <: TPSAlgorithm end
 abstract type AbstractMetropolisHastingsCache end
 
+
+perturb!(cache::AbstractMetropolisHastingsCache, alg::AbstractMetropolisHastingsAlg, state) = error("unimplemented")
 function last_accepted(cache::AbstractMetropolisHastingsCache)
     if hasfield(typeof(cache), :last_accepted)
         return getfield(cache, :last_accepted)

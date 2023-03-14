@@ -179,6 +179,7 @@ function original_changed_state(cache::GaussianMHTrajectoryCache, states)
     return view(states, cache.indices_changed)
 end
 get_last_observation!(cache::GaussianMHTrajectoryCache) = cache.total_observation
+get_cached_observations(cache::GaussianMHTrajectoryCache) = cache.last_observation
 function acceptance!(cache::GaussianMHTrajectoryCache{T, Q}, states::Q, alg::GaussianTrajectoryAlgorithm) where {T, Q}
     parameters = alg.parameters
     TransitionPathSampling.observe!(cache.cached_observation, cache.observable, cache.state_cache, cache.indices_changed)
