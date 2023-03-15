@@ -39,8 +39,7 @@ function set_last_acceptance!(cache::AbstractMetropolisHastingsCache, acceptance
     end
 end
 
-proposed_changed_state(::AbstractMetropolisHastingsCache) = error("unimplemented")
-original_changed_state(::AbstractMetropolisHastingsCache, state) = error("unimplemented")
+
 get_last_observation!(cache::AbstractMetropolisHastingsCache) = error("unimplemented")
 
 macro _check_fraction_domain(val, parameter_name)

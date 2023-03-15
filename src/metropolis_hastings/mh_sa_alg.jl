@@ -63,14 +63,8 @@ end
 function apply!(state::Q, cache::GaussianSACache{Q}) where {Q}
     state .= cache.state
 end
-function proposed_changed_state(cache::GaussianSACache) 
-    return cache.state
-end
-function original_changed_state(cache::GaussianSACache, states) 
-    return states
-end
 get_last_observation!(cache::GaussianSACache) = cache.last_observation
-get_cached_observations(cache::GaussianMHTrajectoryCache) = cache.last_observation
+
 function acceptance!(cache::GaussianSACache{Q}, state::Q, alg::GaussianSAAlgorithm) where {Q}
     parameters = alg.parameters
     new_observation = TransitionPathSampling.observe(cache.observable, proposed_changed_state(cache))

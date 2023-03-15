@@ -3,6 +3,21 @@ import Lazy: @forward
 using ..TransitionPathSampling
 import ..TransitionPathSampling.MetropolisHastings: AbstractMetropolisHastingsAlg
 
+mutable struct SAProposedChange{T, Q}
+    const old_state::T
+    const new_state::T
+    old_observation::Q
+    new_observation::Q
+end
+struct TrajectoryProposedChange{T, I, L}
+    old_state::T
+    new_state::T
+    changed_indices::I
+    old_losses::L
+    new_losses::L
+end
+export SAProposedChange, TrajectoryProposedChange
+
 include("corrections.jl")
 include("acceptance.jl")
 
@@ -52,17 +67,19 @@ end
 
 abstract type AbstractBatchMHCache <: TransitionPathSampling.MetropolisHastings.AbstractMetropolisHastingsCache end
 get_acceptance_cache(alg::AbstractBatchMHCache) = error("unimplemented")
-mutable struct BatchMHCache{A<:TransitionPathSampling.MetropolisHastings.AbstractMetropolisHastingsCache, B<:BatchObservable, C<:Acceptance.AbstractMinibatchAcceptanceCache, D<:Union{<:Number, AbstractArray{<:Number}}} <: AbstractBatchMHCache
-    const inner_cache::A
-    const observable::B
-    const acceptance_cache::C
-    last_observations::D
-    cached_observations::D
-    last_accepted::Bool
+struct BatchMHCache{A<:TransitionPathSampling.MetropolisHastings.AbstractMetropolisHastingsCache, B<:BatchObservable, C<:Acceptance.AbstractMinibatchAcceptanceCache} <: AbstractBatchMHCache
+    inner_cache::A
+    observable::B
+    acceptance_cache::C
 end
 get_acceptance_cache(cache::BatchMHCache) = cache.acceptance_cache
+function TransitionPathSampling.MetropolisHastings.last_accepted(cache::BatchMHCache)
+    return TransitionPathSampling.MetropolisHastings.last_accepted(cache.inner_cache)
+end
+function TransitionPathSampling.MetropolisHastings.set_last_acceptance!(cache::BatchMHCache, accepted)
+    return TransitionPathSampling.MetropolisHastings.set_last_acceptance!(cache.inner_cache, accepted)
+end
 TransitionPathSampling.MetropolisHastings.get_observable(cache::BatchMHCache) = cache.observable
-@forward BatchMHCache.inner_cache TransitionPathSampling.MetropolisHastings.proposed_changed_state, TransitionPathSampling.MetropolisHastings.original_changed_state
 
 function build_acceptance_cache(alg::MinibatchMHAlg, observable::BatchObservable, ::Nothing)
     correction = Corrections.get_cached_correction_cdf()
@@ -75,29 +92,52 @@ function build_acceptance_cache(alg::MinibatchMHAlg, observable::BatchObservable
     return Acceptance.build_cache(observable.total_samples, observable.batch_size, correction; config...)
 end
 
-function TransitionPathSampling.generate_cache(alg::MinibatchMHAlg, problem::TPSProblem; minibatch_config::Union{Dict{Symbol, Any}, Nothing}=nothing)
+function TransitionPathSampling.generate_cache(alg::MinibatchMHAlg, problem::TPSProblem, args...; minibatch_config::Union{Dict{Symbol, Any}, Nothing}=nothing, kwargs...)
     inner_cache = TransitionPathSampling.generate_cache(alg.inner_algorithm, problem)
     observable = TransitionPathSampling.get_observable(problem)
-    current_observations = TransitionPathSampling.MetropolisHastings.get_cached_observations(inner_cache)
-    observation_cache = similar(current_observations) # TODO FIX ME PLEASE!!!!!!
-    # NOTES: 
-    # ABSTRACT AWAY THE OBSERVATION CHECK
     acceptance_cache = build_acceptance_cache(alg, observable, minibatch_config)
-    return BatchMHCache(inner_cache, observable, acceptance_cache, current_observations, observation_cache, false)
+    return BatchMHCache(inner_cache, observable, acceptance_cache)
 end
 
 
+
+function get_proposed_change(cache::BatchMHCache{A}, state) where A<:TransitionPathSampling.MetropolisHastings.GaussianSACache
+    T = typeof(cache.inner_cache.last_observation)
+    return SAProposedChange(state, cache.inner_cache.state, T(0), T(0))
+end
+function get_proposed_change(cache::BatchMHCache{A}, state) where A<:TransitionPathSampling.MetropolisHastings.GaussianMHTrajectoryCache
+    return TrajectoryProposedChange(state, cache.inner_cache.state_cache, cache.inner_cache.indices_changed, cache.inner_cache.last_observation, cache.inner_cache.cached_observation)
+end
+function update!(cache::BatchMHCache{A}, proposed_change::SAProposedChange, state, accept) where A<:TransitionPathSampling.MetropolisHastings.GaussianSACache
+    if accept
+        TransitionPathSampling.MetropolisHastings.apply!(state, cache.inner_cache)
+        cache.inner_cache.last_observation = proposed_change.new_observation
+    else
+        cache.inner_cache.last_observation = proposed_change.old_observation
+    end
+    nothing
+end
+function update!(cache::BatchMHCache{A}, proposed_change::TrajectoryProposedChange, states, accept) where A<:TransitionPathSampling.MetropolisHastings.GaussianMHTrajectoryCache
+    if accept
+        TransitionPathSampling.MetropolisHastings.apply!(states, cache.inner_cache)
+        # Update the losses
+        for i in eachindex(proposed_change.new_losses, proposed_change.old_losses)
+            proposed_change.old_losses[i] = proposed_change.new_losses[i]
+        end
+    end
+
+    cache.inner_cache.total_observation = sum(proposed_change.old_losses)
+    nothing
+end
+
 function TransitionPathSampling.MetropolisHastings.acceptance!(cache::BatchMHCache, states, alg::MinibatchMHAlg)
     acceptance_cache = get_acceptance_cache(cache)
-    inner_cache = cache.inner_cache
-    new_state = TransitionPathSampling.MetropolisHastings.proposed_changed_state(inner_cache)
-    old_state = TransitionPathSampling.MetropolisHastings.original_changed_state(inner_cache, states)
+    proposed_change = get_proposed_change(cache, states)
 
-    a, quants = Acceptance.minibatch_acceptance!(acceptance_cache, old_state, new_state, cache.observable, alg.bias);
+    a = Acceptance.minibatch_acceptance!(acceptance_cache, proposed_change, cache.observable, alg.bias);
 
-    if a
-        TransitionPathSampling.MetropolisHastings.apply!(states, inner_cache)
-    end
+    update!(cache, proposed_change, states, a)
+
     return a
 end
 
@@ -106,13 +146,12 @@ function TransitionPathSampling.MetropolisHastings.perturb!(cache::BatchMHCache,
 end
 
 function TransitionPathSampling.MetropolisHastings.get_last_observation!(cache::BatchMHCache)
-    NaN # TODO IMPLEMENT THIS PROPERLY
+    TransitionPathSampling.MetropolisHastings.get_last_observation!(cache.inner_cache)
 end
 
 export MinibatchMHAlg, AbstractBatchObservable, BatchObservable
 export summarise, MeanLossSummary, AbstractLossSummaryMethod
 import .Acceptance: AbstractBatchLossFn, select_samples!, calculate_losses!, calculate_delta_losses!
 export AbstractBatchLossFn, select_samples!, calculate_losses!, calculate_delta_losses!
-
 
 end

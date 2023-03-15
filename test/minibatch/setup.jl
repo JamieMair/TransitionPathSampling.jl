@@ -28,7 +28,9 @@ function TransitionPathSampling.Minibatch.calculate_losses!(fn::TestBatchLossFn,
     fn.deltas .= (fn.deltas .- y_view) .^ 2
     return fn.deltas
 end
-function TransitionPathSampling.Minibatch.calculate_delta_losses!(fn::TestBatchLossFn, params_old, params_new)
+function TransitionPathSampling.Minibatch.calculate_delta_losses!(fn::TestBatchLossFn, proposed_change::SAProposedChange)
+    params_old = proposed_change.old_state
+    params_new = proposed_change.new_state
     x_view = view(fn.X, :, fn.current_indices)
     y_view = view(fn.Y, fn.current_indices)
     c = fn.cache
@@ -36,28 +38,39 @@ function TransitionPathSampling.Minibatch.calculate_delta_losses!(fn::TestBatchL
 
     mul!(reshape(c, 1, :), reshape(params_new, 1, :), x_view)
     deltas .= (c .- y_view) .^ 2
+    proposed_change.new_observation += sum(deltas)
     mul!(reshape(c, 1, :), reshape(params_old, 1, :), x_view)
-    deltas .-= (c .- y_view) .^ 2
+    c .= (c .- y_view) .^ 2
+    proposed_change.old_observation += sum(c)
+    deltas .-= c
     return deltas
 end
-function TransitionPathSampling.Minibatch.calculate_delta_losses!(fn::TestBatchLossFn, params_old::AbstractArray{<:AbstractArray}, params_new::AbstractArray{<:AbstractArray})
+function TransitionPathSampling.Minibatch.calculate_delta_losses!(fn::TestBatchLossFn, proposed_change::TrajectoryProposedChange)
     x_view = view(fn.X, :, fn.current_indices)
     y_view = view(fn.Y, fn.current_indices)
     c = fn.cache
     deltas = fn.deltas
     is_first = true
 
-    for (pn, po) in zip(params_new, params_old)
+    for i in proposed_change.changed_indices
+        pn = proposed_change.new_state[i]
+        po = proposed_change.old_state[i]
+
         mul!(reshape(c, 1, :), reshape(pn, 1, :), x_view)
+        c .= (c .- y_view) .^ 2
+        proposed_change.new_losses[i] += sum(c)
         if is_first
-            deltas .= (c .- y_view) .^ 2
+            deltas .= c
             is_first = false
 
         else
-            deltas .+= (c .- y_view) .^ 2
+            deltas .+= c
         end
+        
         mul!(reshape(c, 1, :), reshape(po, 1, :), x_view)
-        deltas .-= (c .- y_view) .^ 2
+        c .= (c .- y_view) .^ 2
+        proposed_change.old_losses[i] += sum(c)
+        deltas .-= c
     end
 
     return deltas
