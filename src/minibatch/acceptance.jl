@@ -200,7 +200,7 @@ function minibatch_acceptance!(cache::AbstractMinibatchAcceptanceCache, proposed
 end
 # TODO: Come up with a more sensible tolerance, perhaps based on s
 function build_cache(total_samples, batch_size, correction::CorrectionDistribution; use_histogram=false, error_tol=0.5e-2, to_device=identity, cutoff=5.0, offset=10.0)
-    all_indices = collect(1:total_samples) |> to_device
+    all_indices = collect(1:total_samples)
     cache = MinibatchAcceptanceCache(all_indices, total_samples, batch_size, error_tol, cutoff, offset, correction, 0)
 
     if use_histogram
