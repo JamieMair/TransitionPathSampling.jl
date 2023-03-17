@@ -181,6 +181,7 @@ function acceptance!(cache::GaussianMHTrajectoryCache{T, Q}, states::Q, alg::Gau
     for i in cache.indices_changed
         delta_obs += cache.cached_observation[i] - cache.last_observation[i]
     end
+    
     if rand() <= exp(-parameters.s * delta_obs)
         cache.last_observation[cache.indices_changed] .= cache.cached_observation[cache.indices_changed]
         # Apply the changes in the cache

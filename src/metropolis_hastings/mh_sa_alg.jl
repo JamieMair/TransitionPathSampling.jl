@@ -67,7 +67,7 @@ get_last_observation!(cache::GaussianSACache) = cache.last_observation
 
 function acceptance!(cache::GaussianSACache{Q}, state::Q, alg::GaussianSAAlgorithm) where {Q}
     parameters = alg.parameters
-    new_observation = TransitionPathSampling.observe(cache.observable, proposed_changed_state(cache))
+    new_observation = TransitionPathSampling.observe(cache.observable, cache.state)
     delta_obs = new_observation - cache.last_observation
     if rand() <= exp(-parameters.s * delta_obs)
         cache.last_observation = new_observation

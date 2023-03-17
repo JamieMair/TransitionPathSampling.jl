@@ -2,7 +2,7 @@ module Minibatch
 import Lazy: @forward
 using ..TransitionPathSampling
 import ..TransitionPathSampling.MetropolisHastings: AbstractMetropolisHastingsAlg
-
+using Random
 mutable struct SAProposedChange{T, Q}
     const old_state::T
     const new_state::T
@@ -121,12 +121,15 @@ function update!(cache::BatchMHCache{A}, proposed_change::TrajectoryProposedChan
     if accept
         TransitionPathSampling.MetropolisHastings.apply!(states, cache.inner_cache)
         # Update the losses
-        for i in eachindex(proposed_change.new_losses, proposed_change.old_losses)
+        for i in proposed_change.changed_indices
             proposed_change.old_losses[i] = proposed_change.new_losses[i]
         end
     end
-
+    # todo make this calculation more efficient
     cache.inner_cache.total_observation = sum(proposed_change.old_losses)
+    # Shuffle the batch on the next turn
+    shuffle!(Acceptance.get_all_indices(cache.acceptance_cache))
+
     nothing
 end
 
