@@ -51,6 +51,9 @@ get_epoch_from_state(iter_state) = iter_state
 
 export solve, TPSProblem, TPSAlgorithm, TPSSolution, get_epoch_from_state
 
+## Support ##
+include("histograms.jl")
+
 ## Includes ##
 include("observables.jl")
 include("default_solutions.jl")
@@ -60,6 +63,7 @@ include("sa_problem.jl")
 include("discrete_trajectory_problem.jl")
 # Algorithms
 include("metropolis_hastings/mh.jl")
+include("minibatch/minibatch.jl")
 
 # Convergence
 include("convergence/convergence.jl")
