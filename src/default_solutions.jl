@@ -7,21 +7,24 @@ mutable struct SimpleSolution{T, S} <: TPSSolution
     algorithm::TPSAlgorithm
     state::S
 end
-function SimpleSolution(problem::T, algorithm::S) where {T<:TPSProblem, S<:TPSAlgorithm}
+function SimpleSolution(problem::T, algorithm::S, num_epochs::Int) where {T<:TPSProblem, S<:TPSAlgorithm}
     observable = get_observable(problem)
     state = get_initial_state(problem)
     initial_observable = observe(observable, state)
-    return SimpleSolution([initial_observable], problem, algorithm, deepcopy(state))
+    observations = Vector{typeof(initial_observable)}(undef, num_epochs+1)
+    observations[begin] = initial_observable
+    return SimpleSolution(observations, problem, algorithm, deepcopy(state))
 end
-# Forward these methods so that the solution can be plotted
-@forward SimpleSolution.observations (Base.size, Base.getindex, Base.setindex!, Base.IndexStyle, Base.iterate, Base.similar, Base.push!, Base.pop!, Base.first, Base.firstindex, Base.last, Base.lastindex, Base.length)
+
 get_current_state(solution::SimpleSolution) = solution.state
 get_problem(solution::SimpleSolution) = solution.problem
 function set_current_state!(solution::SimpleSolution{T, S}, state::S) where {T, S}
     solution.state = state
     return nothing
 end
-get_observable_type(solution::SimpleSolution{T, S}) where {T, S} = T
+get_observable_type(::SimpleSolution{T, S}) where {T, S} = T
 get_observations(solution::SimpleSolution) = solution.observations
-
+function set_observation!(solution::SimpleSolution, iteration::Int, value)
+    solution.observations[iteration] = value
+end
 export get_current_state, set_current_state!, SimpleSolution, get_problem, get_observable_type, get_observations

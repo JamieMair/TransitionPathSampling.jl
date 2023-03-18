@@ -17,7 +17,7 @@ function get_observable(problem::TPSProblem) end
 
 # Interface for TPSAlgorithm
 abstract type TPSAlgorithm end
-function init_solution(alg, problem, args...; kwargs...)
+function init_solution(alg, problem, iterator, args...; kwargs...)
     error("Default solution is not specified.")
 end
 
@@ -27,7 +27,7 @@ get_problem(solution::TPSSolution) = error("Unimplemented.")
 get_current_state(solution::TPSSolution) = error("Unimplemented.")
 set_current_state!(solution::TPSSolution, state) = error("Unimplemented.")
 get_observable_type(solution::TPSSolution) = error("Unimplemented.")
-
+set_observation!(solution::TPSSolution, iteration, value) = error("Unimplemented.")
 
 function step!(solution::TPSSolution, alg::TPSAlgorithm, iter, args...; kwargs...) end
 function step!(::Nothing, solution::TPSSolution, alg::TPSAlgorithm, iter, args...; kwargs...)
@@ -63,7 +63,6 @@ include("sa_problem.jl")
 include("discrete_trajectory_problem.jl")
 # Algorithms
 include("metropolis_hastings/mh.jl")
-include("minibatch/minibatch.jl")
 
 # Convergence
 include("convergence/convergence.jl")
@@ -74,10 +73,13 @@ include("annealing/annealing.jl")
 # Callbacks
 include("callbacks.jl")
 
+# Extensions
+include("minibatch/minibatch.jl")
+
 import .Callbacks: run_cb_at_initialisation!, run_cb_at_finalisation!, run_cb_pre_inner_loop!, run_cb_post_inner_loop!, SolveDependencies, AbstractCallback
 
 function solve(problem::TPSProblem, alg::TPSAlgorithm, iterator, args...; cb::Union{Nothing,AbstractCallback}=nothing, kwargs...)
-    solution = init_solution(alg, problem, args...; kwargs...)
+    solution = init_solution(alg, problem, iterator, args...; kwargs...)
     iter = get_iterator(iterator; problem=problem, solution=solution, algorithm=alg)
     cache = generate_cache(alg, problem, args...; kwargs...)
 
