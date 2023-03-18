@@ -17,11 +17,14 @@ end
 function get_trajectory_length(problem::DTProblem)
     length(problem.states)
 end
-function TransitionPathSampling.init_solution(alg, problem::T, args...; kwargs...) where {T<:AbstractDiscreteTrajectoryProblem}
+function TransitionPathSampling.init_solution(algorithm, problem::T, iterator, args...; kwargs...) where {T<:AbstractDiscreteTrajectoryProblem}
+    num_epochs = length(iterator)
     observable = TransitionPathSampling.get_observable(problem)
     state = TransitionPathSampling.get_initial_state(problem)
     initial_observable = sum(TransitionPathSampling.observe(observable, state))
-    return SimpleSolution([initial_observable], problem, alg, deepcopy(state))
+    observations = Vector{typeof(initial_observable)}(undef, num_epochs+1)
+    observations[begin] = initial_observable
+    return SimpleSolution(observations, problem, algorithm, deepcopy(state))
 end
 
 
