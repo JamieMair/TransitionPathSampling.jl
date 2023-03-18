@@ -1,5 +1,5 @@
 using ..TransitionPathSampling.Callbacks
-
+using SimpleTraits
 
 # TODO: ADD OPTIONS TO DISABLE THE STATS COLLECTION
 
@@ -41,3 +41,6 @@ end
 function TransitionPathSampling.Callbacks.run(cb::MinibatchStatisticsCallback, deps::TransitionPathSampling.Callbacks.SolveDependencies)
     _run!(cb, deps.cache, deps.iterator_state)
 end
+
+
+@traitimpl TransitionPathSampling.Callbacks.RunsPostInnerLoop{MinibatchStatisticsCallback}
