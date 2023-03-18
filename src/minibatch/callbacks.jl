@@ -44,3 +44,5 @@ end
 
 
 @traitimpl TransitionPathSampling.Callbacks.RunsPostInnerLoop{MinibatchStatisticsCallback}
+
+export MinibatchStatisticsCallback
