@@ -13,10 +13,10 @@ end
 function TransitionPathSampling.get_observable(problem::SAProblem)
     return problem.observable
 end
-function TransitionPathSampling.init_solution(alg, problem::T, args...; kwargs...) where {T<:AbstractSAProblem}
+function TransitionPathSampling.init_solution(alg, problem::T, iterator, args...; kwargs...) where {T<:AbstractSAProblem}
     # By default, have a simple solution
     # TODO: Add some configuration options here
-    sol = SimpleSolution(problem, alg)
+    sol = SimpleSolution(problem, alg, length(iterator))
     return sol
 end
 

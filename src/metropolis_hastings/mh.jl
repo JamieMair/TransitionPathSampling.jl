@@ -62,7 +62,7 @@ function TransitionPathSampling.step!(cache::AbstractMetropolisHastingsCache, so
     if accept
         TransitionPathSampling.set_current_state!(solution, state)
     end
-    push!(solution, get_last_observation!(cache))
+    TransitionPathSampling.set_observation!(solution, iter, get_last_observation!(cache))
     # ToDo specialise on the type of solution to record more details
     nothing
 end

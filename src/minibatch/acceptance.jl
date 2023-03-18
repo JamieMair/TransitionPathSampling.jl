@@ -151,6 +151,14 @@ function finalise!(proposed_change::TrajectoryProposedChange, quants::MinibatchQ
     end
 end
 
+struct MinibatchAcceptanceInfo
+    quantities::MinibatchQuantities
+    has_full_batch::Bool
+    has_been_cutoff::Bool
+    has_default_acceptance::Bool
+    has_accepted::Bool
+end
+
 function minibatch_acceptance!(cache::AbstractMinibatchAcceptanceCache, proposed_change, loss_fn, bias)
     total_samples = get_total_samples(cache)
     s = bias
@@ -182,13 +190,13 @@ function minibatch_acceptance!(cache::AbstractMinibatchAcceptanceCache, proposed
     if quants.num_samples>=total_samples
         acceptance_rate = inv(1+exp(-quants.mean_delta))
         accept = rand(typeof(quants.mean_delta)) < acceptance_rate
-        return accept
+        return MinibatchAcceptanceInfo(quants, true, false, false, accept)
     end
 
     
     # Short-circuit the cutoff if the acceptance will obviously be 1 or 0
     if has_been_cutoff
-        return (quants.mean_delta > 0)
+        return MinibatchAcceptanceInfo(quants, false, true, false, (quants.mean_delta > 0))
     end
 
     # Normal minibatch acceptance
@@ -196,7 +204,7 @@ function minibatch_acceptance!(cache::AbstractMinibatchAcceptanceCache, proposed
     correction_dist = get_correction_dist(cache)
     x_corr = sample(correction_dist)
 
-    return (quants.mean_delta + x_nc + x_corr > 0)
+    return MinibatchAcceptanceInfo(quants, false, false, true, (quants.mean_delta + x_nc + x_corr > 0))
 end
 # TODO: Come up with a more sensible tolerance, perhaps based on s
 function build_cache(total_samples, batch_size, correction::CorrectionDistribution; use_histogram=false, error_tol=0.5e-2, to_device=identity, cutoff=5.0, offset=10.0)
