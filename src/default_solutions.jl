@@ -25,6 +25,6 @@ end
 get_observable_type(::SimpleSolution{T, S}) where {T, S} = T
 get_observations(solution::SimpleSolution) = solution.observations
 function set_observation!(solution::SimpleSolution, iteration::Int, value)
-    solution.observations[iteration] = value
+    solution.observations[iteration+1] = value
 end
 export get_current_state, set_current_state!, SimpleSolution, get_problem, get_observable_type, get_observations
