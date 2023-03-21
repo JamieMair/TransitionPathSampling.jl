@@ -28,13 +28,16 @@ function _run!(::MinibatchStatisticsCallback, ::Any, ::Any)
     @error "MinibatchStatisticsCallback requires a BatchMHCache to be used and an integer iteration state."
 end
 function _run!(cb::MinibatchStatisticsCallback, cache::BatchMHCache, epoch::Int)
-    cb.acceptances[epoch] = cache.last_acceptance_info.has_accepted
-    cb.is_full_batch[epoch] = cache.last_acceptance_info.has_full_batch
-    cb.is_cutoff_batch[epoch] = cache.last_acceptance_info.has_been_cutoff
-    cb.is_default_batch[epoch] = cache.last_acceptance_info.has_default_acceptance
-    cb.batch_sizes[epoch] = cache.last_acceptance_info.quantities.num_samples
-    cb.mean_deltas[epoch] = cache.last_acceptance_info.quantities.mean_delta
-    cb.var_deltas[epoch] = cache.last_acceptance_info.quantities.var_delta
+    n = length(cb.acceptances)
+    @inbounds if 1 <= epoch <= n
+        cb.acceptances[epoch] = cache.last_acceptance_info.has_accepted
+        cb.is_full_batch[epoch] = cache.last_acceptance_info.has_full_batch
+        cb.is_cutoff_batch[epoch] = cache.last_acceptance_info.has_been_cutoff
+        cb.is_default_batch[epoch] = cache.last_acceptance_info.has_default_acceptance
+        cb.batch_sizes[epoch] = cache.last_acceptance_info.quantities.num_samples
+        cb.mean_deltas[epoch] = cache.last_acceptance_info.quantities.mean_delta
+        cb.var_deltas[epoch] = cache.last_acceptance_info.quantities.var_delta
+    end
     nothing
 end
 
