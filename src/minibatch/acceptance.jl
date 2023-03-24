@@ -106,9 +106,8 @@ get_cutoff(c::MinibatchAcceptanceCache) = c.cutoff
 get_offset(c::MinibatchAcceptanceCache) = c.offset
 
 function should_cutoff(mean, variance, batch_size, cutoff, offset)
-    # z = zero(typeof(variance))
-    return false
-    # return variance > z && batch_size * (max(abs(mean) - offset, z)/cutoff)^2 > variance
+    z = zero(typeof(variance))
+    return variance > z && batch_size * (max(abs(mean) - offset, z)/cutoff)^2 > variance
 end
 
 struct MinibatchAcceptanceCacheWithHistogram{C<:MinibatchAcceptanceCache, H<:AbstractHistogram} <: AbstractMinibatchAcceptanceCache
