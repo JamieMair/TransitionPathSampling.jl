@@ -119,6 +119,23 @@ has_histogram(::MinibatchAcceptanceCacheWithHistogram) = true
 get_histogram(c::MinibatchAcceptanceCacheWithHistogram) = c.histogram
 Lazy.@forward MinibatchAcceptanceCacheWithHistogram.cache get_all_indices, get_indices, increment_indices!, get_total_samples, get_error_tol, get_batch_size, get_correction_dist, get_cutoff, get_offset
 
+function reset_indices!(cache::MinibatchAcceptanceCache)
+    cache.offset_index = 0
+    nothing
+end
+function shuffle_next_indices!(cache::MinibatchAcceptanceCache)
+    num_samples = length(cache.all_indices)
+    
+    @assert cache.offset_index>=0
+    @assert cache.offset_index+cache.batch_size <= num_samples
+
+    @inbounds for i in cache.offset_index+1:cache.offset_index+cache.batch_size
+        next_index = rand(i:num_samples)
+        # Swap current index with sample from remainder of the list
+        cache.all_indices[i], cache.all_indices[next_index] = (cache.all_indices[next_index], cache.all_indices[i]) 
+    end
+    nothing
+end
 function increment_indices!(cache::MinibatchAcceptanceCache)
     cache.offset_index = (cache.offset_index + cache.batch_size + 1) % cache.total_samples - 1
     # TODO: fix batch size wrapping
@@ -166,14 +183,16 @@ function minibatch_acceptance!(cache::AbstractMinibatchAcceptanceCache, proposed
     offset = get_offset(cache)
 
     init!(proposed_change)
+    reset_indices!(cache)
+    shuffle_next_indices!(cache)
 
     quants = calculate_batch_quantities!(MinibatchQuantities(), loss_fn, proposed_change, s, get_indices(cache))
-    increment_indices!(cache)
     has_been_cutoff = should_cutoff(quants.mean_delta, quants.var_delta, quants.num_samples, cutoff, offset)
 
     while ((quants.var_delta >= quants.num_samples && !has_been_cutoff) || quants.error_estimate > error_tol) && quants.num_samples < total_samples
-        quants = calculate_batch_quantities!(quants, loss_fn, proposed_change, s, get_indices(cache))
+        shuffle_next_indices!(cache)
         increment_indices!(cache)
+        quants = calculate_batch_quantities!(quants, loss_fn, proposed_change, s, get_indices(cache))
         has_been_cutoff = should_cutoff(quants.mean_delta, quants.var_delta, quants.num_samples, cutoff, offset)
     end
 
@@ -206,13 +225,9 @@ function minibatch_acceptance!(cache::AbstractMinibatchAcceptanceCache, proposed
     return MinibatchAcceptanceInfo(quants, false, false, true, (quants.mean_delta + x_nc + x_corr > 0))
 end
 # TODO: Come up with a more sensible tolerance, perhaps based on s
-function build_cache(total_samples, batch_size, correction::CorrectionDistribution; use_histogram=false, error_tol=0.5e-2, to_device=identity, cutoff=5.0, offset=10.0, should_shuffle=false)
+function build_cache(total_samples, batch_size, correction::CorrectionDistribution; use_histogram=false, error_tol=0.5e-2, to_device=identity, cutoff=5.0, offset=10.0, index_type=Int)
     # todo: support device shuffling!
-    all_indices = if should_shuffle
-        collect(1:total_samples)
-    else
-        1:total_samples
-    end
+    all_indices = collect(convert(index_type, 1):convert(index_type, total_samples))
     # all_indices = collect(1:total_samples) |> to_device
     cache = MinibatchAcceptanceCache(all_indices, total_samples, batch_size, error_tol, cutoff, offset, correction, 0)
 

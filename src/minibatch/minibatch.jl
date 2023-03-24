@@ -24,10 +24,9 @@ include("acceptance.jl")
 using .Acceptance
 using .Corrections
 
-struct MinibatchMHAlg{A<:AbstractMetropolisHastingsAlg, T, S} <: AbstractMetropolisHastingsAlg
+struct MinibatchMHAlg{A<:AbstractMetropolisHastingsAlg, T} <: AbstractMetropolisHastingsAlg
     inner_algorithm::A
     bias::T
-    should_shuffle::Val{S}
 end
 
 export MinibatchMHAlg
@@ -68,11 +67,10 @@ end
 
 abstract type AbstractBatchMHCache <: TransitionPathSampling.MetropolisHastings.AbstractMetropolisHastingsCache end
 get_acceptance_cache(alg::AbstractBatchMHCache) = error("unimplemented")
-mutable struct BatchMHCache{A<:TransitionPathSampling.MetropolisHastings.AbstractMetropolisHastingsCache, B<:BatchObservable, C<:Acceptance.AbstractMinibatchAcceptanceCache, D} <: AbstractBatchMHCache
+mutable struct BatchMHCache{A<:TransitionPathSampling.MetropolisHastings.AbstractMetropolisHastingsCache, B<:BatchObservable, C<:Acceptance.AbstractMinibatchAcceptanceCache} <: AbstractBatchMHCache
     const inner_cache::A
     const observable::B
     const acceptance_cache::C
-    const should_shuffle::Val{D}
     last_acceptance_info::Acceptance.MinibatchAcceptanceInfo
 end
 get_acceptance_cache(cache::BatchMHCache) = cache.acceptance_cache
@@ -99,7 +97,7 @@ function TransitionPathSampling.generate_cache(alg::MinibatchMHAlg, problem::TPS
     inner_cache = TransitionPathSampling.generate_cache(alg.inner_algorithm, problem)
     observable = TransitionPathSampling.get_observable(problem)
     acceptance_cache = build_acceptance_cache(alg, observable, minibatch_config)
-    return BatchMHCache(inner_cache, observable, acceptance_cache, alg.should_shuffle, Acceptance.MinibatchAcceptanceInfo(Acceptance.MinibatchQuantities(), false, false, false, false))
+    return BatchMHCache(inner_cache, observable, acceptance_cache, Acceptance.MinibatchAcceptanceInfo(Acceptance.MinibatchQuantities(), false, false, false, false))
 end
 
 
@@ -120,7 +118,7 @@ function update!(cache::BatchMHCache{A}, proposed_change::SAProposedChange, stat
     end
     nothing
 end
-function update!(cache::BatchMHCache{A, B, C, D}, proposed_change::TrajectoryProposedChange, states, accept) where {A<:TransitionPathSampling.MetropolisHastings.GaussianMHTrajectoryCache, B, C, D}
+function update!(cache::BatchMHCache{A, B, C}, proposed_change::TrajectoryProposedChange, states, accept) where {A<:TransitionPathSampling.MetropolisHastings.GaussianMHTrajectoryCache, B, C}
     if accept
         TransitionPathSampling.MetropolisHastings.apply!(states, cache.inner_cache)
         # Update the losses
@@ -130,10 +128,6 @@ function update!(cache::BatchMHCache{A, B, C, D}, proposed_change::TrajectoryPro
     end
     # todo make this calculation more efficient
     cache.inner_cache.total_observation = sum(proposed_change.old_losses)
-    
-    if D # enable shuffling
-        shuffle!(Acceptance.get_all_indices(cache.acceptance_cache))
-    end
 
     nothing
 end
