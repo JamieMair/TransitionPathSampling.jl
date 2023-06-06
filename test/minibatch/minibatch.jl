@@ -7,13 +7,13 @@ include("setup.jl")
     @testset "SA Cache" begin
         problem = create_problem(x_data, y_data, batch_size, 1)
         inner_alg = TransitionPathSampling.MetropolisHastings.gaussian_sa_algorithm(s, σ);
-        alg = MinibatchMHAlg(inner_alg, s, Val(false))
+        alg = MinibatchMHAlg(inner_alg, s)
         @test typeof(TransitionPathSampling.generate_cache(alg, problem))<:TransitionPathSampling.Minibatch.BatchMHCache
     end
     @testset "Trajectory Cache" begin
         problem = create_problem(x_data, y_data, batch_size, 8)
         inner_alg = TransitionPathSampling.MetropolisHastings.gaussian_trajectory_algorithm(s, σ);
-        alg = MinibatchMHAlg(inner_alg, s, Val(false))
+        alg = MinibatchMHAlg(inner_alg, s)
         @test typeof(TransitionPathSampling.generate_cache(alg, problem))<:TransitionPathSampling.Minibatch.BatchMHCache
     end
 end

@@ -141,6 +141,7 @@ function increment_indices!(cache::MinibatchAcceptanceCache)
     # TODO: fix batch size wrapping
     nothing
 end
+Lazy.@forward MinibatchAcceptanceCacheWithHistogram.cache reset_indices!, shuffle_next_indices!, increment_indices!
 
 function init!(proposed_change::SAProposedChange)
     T = typeof(proposed_change.old_observation)
