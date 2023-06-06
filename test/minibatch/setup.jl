@@ -108,7 +108,7 @@ function test_acceptance(X, Y, batch_size, tau, s, params_old, params_new, sigma
     else
         TransitionPathSampling.MetropolisHastings.gaussian_trajectory_algorithm(s, sigma);
     end
-    alg = MinibatchMHAlg(inner_alg, s, Val(false))
+    alg = MinibatchMHAlg(inner_alg, s)
     config = Dict{Symbol, Any}(
         :use_histogram => true,
         :error_tol => 0.2
