@@ -117,7 +117,7 @@ end
 has_histogram(::AbstractMinibatchAcceptanceCache) = false
 has_histogram(::MinibatchAcceptanceCacheWithHistogram) = true
 get_histogram(c::MinibatchAcceptanceCacheWithHistogram) = c.histogram
-Lazy.@forward MinibatchAcceptanceCacheWithHistogram.cache get_all_indices, get_indices, increment_indices!, get_total_samples, get_error_tol, get_batch_size, get_correction_dist, get_cutoff, get_offset
+
 
 function reset_indices!(cache::MinibatchAcceptanceCache)
     cache.offset_index = 0
@@ -141,6 +141,8 @@ function increment_indices!(cache::MinibatchAcceptanceCache)
     # TODO: fix batch size wrapping
     nothing
 end
+
+Lazy.@forward MinibatchAcceptanceCacheWithHistogram.cache get_all_indices, get_indices, get_total_samples, get_error_tol, get_batch_size, get_correction_dist, get_cutoff, get_offset
 Lazy.@forward MinibatchAcceptanceCacheWithHistogram.cache reset_indices!, shuffle_next_indices!, increment_indices!
 
 function init!(proposed_change::SAProposedChange)
