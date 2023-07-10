@@ -36,8 +36,7 @@ function TransitionPathSampling.generate_cache(alg::GaussianTrajectoryAlgorithm,
     use_mask = (num_parameters != num_params_to_change)
     exclude_parameter_mask = BitArray(i > num_params_to_change for i in 1:num_parameters)
     observable = TransitionPathSampling.get_observable(problem)
-    observations = TransitionPathSampling.observe(observable, initial_state)
-    @assert typeof(observations)<:AbstractArray "The observation function does not return a vector of observations for each state in the trajectory."
+    observations = [TransitionPathSampling.observe(observable, state) for state in initial_state]
     total_observation = sum(observations)
     indices_changed = 1:num_models
 
