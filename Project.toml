@@ -1,7 +1,7 @@
 name = "TransitionPathSampling"
 uuid = "90a4db8d-a042-44ed-af16-fb847fa05318"
 authors = ["Jamie Mair <jamie.mair@noreply.github.com> and contributors"]
-version = "0.3.2"
+version = "0.4.0"
 
 [deps]
 BSON = "fbb218c0-5317-5bc6-957e-2ee96dd4b1f0"
