@@ -35,7 +35,7 @@ iter = 1:10
         @test cache.num_parameters == d
         @test cache.num_models == n
         @test cache.observable == problem.observable
-        observation = TransitionPathSampling.observe(problem.observable, TransitionPathSampling.get_initial_state(problem))
+        observation = [TransitionPathSampling.observe(problem.observable, s) for s in TransitionPathSampling.get_initial_state(problem)]
         @test all(observation .== cache.last_observation)
         rand!(cache.cached_observation)
         cache.cached_observation .+= 1000

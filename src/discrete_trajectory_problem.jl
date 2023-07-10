@@ -21,7 +21,7 @@ function TransitionPathSampling.init_solution(algorithm, problem::T, iterator, a
     num_epochs = length(iterator)
     observable = TransitionPathSampling.get_observable(problem)
     state = TransitionPathSampling.get_initial_state(problem)
-    initial_observable = sum(TransitionPathSampling.observe(observable, state))
+    initial_observable = sum([TransitionPathSampling.observe(observable, s) for s in state])
     observations = Vector{typeof(initial_observable)}(undef, num_epochs+1)
     observations[begin] = initial_observable
     return SimpleSolution(observations, problem, algorithm, deepcopy(state))
