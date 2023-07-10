@@ -1,7 +1,7 @@
 using Random
 
-Base.@kwdef mutable struct GaussianSAParameters{T<:Real, K<:Union{Nothing, Real}}
-    s::T
+Base.@kwdef mutable struct GaussianSAParameters{T<:AbstractFloat, K<:Union{Nothing, Real}}
+    s::Float64
     σ::T
     fraction_to_include::K
 end

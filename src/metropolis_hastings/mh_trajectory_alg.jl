@@ -1,8 +1,8 @@
 using Random
 using Base
 
-Base.@kwdef mutable struct GaussianMHTrajectoryParameters{T<:Real, K<:Union{Nothing, Real}, X<:Union{Nothing, Real}, Q<:Union{Nothing,Int}}
-    s::T
+Base.@kwdef mutable struct GaussianMHTrajectoryParameters{T<:AbstractFloat, K<:Union{Nothing, Real}, X<:Union{Nothing, Real}, Q<:Union{Nothing,Int}}
+    s::Float64
     σ::T
     fraction_to_include::K
     chance_shoot::X
