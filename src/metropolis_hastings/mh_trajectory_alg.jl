@@ -172,7 +172,7 @@ function apply!(states::Q, cache::GaussianMHTrajectoryCache{T, Q}) where {T, Q}
 end
 
 
-get_last_observation!(cache::GaussianMHTrajectoryCache) = cache.total_observation
+get_last_observation(cache::GaussianMHTrajectoryCache) = cache.total_observation
 function acceptance!(cache::GaussianMHTrajectoryCache{T, Q}, states::Q, alg::GaussianTrajectoryAlgorithm) where {T, Q}
     parameters = alg.parameters
     TransitionPathSampling.observe!(cache.cached_observation, cache.observable, cache.state_cache, cache.indices_changed)

@@ -40,7 +40,7 @@ function set_last_acceptance!(cache::AbstractMetropolisHastingsCache, acceptance
 end
 
 
-get_last_observation!(cache::AbstractMetropolisHastingsCache) = error("unimplemented")
+get_last_observation(cache::AbstractMetropolisHastingsCache) = error("unimplemented")
 
 macro _check_fraction_domain(val, parameter_name)
     quote
@@ -62,7 +62,7 @@ function TransitionPathSampling.step!(cache::AbstractMetropolisHastingsCache, so
     if accept
         TransitionPathSampling.set_current_state!(solution, state)
     end
-    TransitionPathSampling.set_observation!(solution, iter, get_last_observation!(cache))
+    TransitionPathSampling.set_observation!(solution, iter, get_last_observation(cache))
     # ToDo specialise on the type of solution to record more details
     nothing
 end

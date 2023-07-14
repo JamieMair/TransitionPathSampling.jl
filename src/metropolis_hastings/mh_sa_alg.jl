@@ -63,7 +63,7 @@ end
 function apply!(state::Q, cache::GaussianSACache{Q}) where {Q}
     state .= cache.state
 end
-get_last_observation!(cache::GaussianSACache) = cache.last_observation
+get_last_observation(cache::GaussianSACache) = cache.last_observation
 
 function acceptance!(cache::GaussianSACache{Q}, state::Q, alg::GaussianSAAlgorithm) where {Q}
     parameters = alg.parameters

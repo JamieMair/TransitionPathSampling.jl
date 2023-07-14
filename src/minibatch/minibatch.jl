@@ -149,8 +149,8 @@ function TransitionPathSampling.MetropolisHastings.perturb!(cache::BatchMHCache,
     TransitionPathSampling.MetropolisHastings.perturb!(cache.inner_cache, alg.inner_algorithm, state)
 end
 
-function TransitionPathSampling.MetropolisHastings.get_last_observation!(cache::BatchMHCache)
-    TransitionPathSampling.MetropolisHastings.get_last_observation!(cache.inner_cache)
+function TransitionPathSampling.MetropolisHastings.get_last_observation(cache::BatchMHCache)
+    TransitionPathSampling.MetropolisHastings.get_last_observation(cache.inner_cache)
 end
 
 include("callbacks.jl")
