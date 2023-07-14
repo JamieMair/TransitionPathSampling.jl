@@ -142,6 +142,7 @@ function run_cb_post_inner_loop!(cb::CallbackSet, deps)
     nothing
 end
 
+export @traitimpl, RunsAtInitialisation, RunsAtFinalisation, RunsPreInnerLoop, RunsPostInnerLoop
 export InitialisationCallback, FinalisationCallback, PreInnerLoopCallback, PostInnerLoopCallback, CallbackSet, SolveDependencies
 
 end
